@@ -1,0 +1,55 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "Net/UnrealNetwork.h"
+
+#include "PlayerStateComponent.generated.h"
+
+// 플레이어의 상태를 체크하는 컴포넌트
+// 쉴드, 체력, 
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class LUDENS_P_API UPlayerStateComponent : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:	
+	// Sets default values for this component's properties
+	UPlayerStateComponent();
+
+	// 플레이어 체력
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,  Category = "Player", Replicated)
+	float MaxHP = 100.0f;
+	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
+	float CurrentHP;
+
+	// 플레이어 쉴드
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", Replicated)
+	float MaxShield = 100.0f;
+	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
+	float CurrentShield;
+
+	// 플레이어가 공격 당한 상태인지 확인, 공격 당하면 일정 시간 동안 무적 상태
+	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_IsAttacked)
+	bool IsAttacked = false;
+	FTimerHandle InvincibilityTimerHandle;
+
+	//플레이어의 생존 여부
+	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Dead)
+	bool IsDead = false;
+	
+	void Dead();
+	void TakeDamage(float Amount);
+	void ResetInvincibility(); // 무적 시간 초기화 함수
+	UFUNCTION()
+	void OnRep_IsAttacked(); // 피격 당한 상태(무적 시간)일 때 UI 또는 이펙트를 적용하는 함수
+	UFUNCTION()
+	void OnRep_Dead(); // 죽은 상태일 때 UI 또는 이펙트를 적용하는 함수
+	
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
+};
