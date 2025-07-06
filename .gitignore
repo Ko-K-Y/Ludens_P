@@ -12,3 +12,5 @@ Saved
 *.suo
 *.xcodeproj
 *.xcworkspace
+/Content/StartContent/ 
+/Content/FirstPersonArms/
