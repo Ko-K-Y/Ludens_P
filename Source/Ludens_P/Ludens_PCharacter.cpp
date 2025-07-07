@@ -10,6 +10,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
+#include "PlayerAttackComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
 
@@ -75,6 +76,10 @@ void ALudens_PCharacter::BeginPlay()
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!"));
 	}
+	else if (!MeleeAttackAction)
+	{
+		UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!"));
+	}
 	if (!DefaultMappingContext)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("DefaultMappingContext is null!"));
@@ -96,8 +101,12 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Look);
 
-		//Dash
+		// Dash
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Dash);
+
+		// MeleeAttack
+		EnhancedInputComponent->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::MeleeAttack);
+
 	}
 }
 
@@ -265,12 +274,20 @@ void ALudens_PCharacter::RechargeDash()
 	}
 }
 
-void ALudens_PCharacter::ResetMovementParams()
+void ALudens_PCharacter::ResetMovementParams() const
 {
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
 		MoveComp->GroundFriction = OriginalGroundFriction;
 		MoveComp->BrakingDecelerationWalking = OriginalBrakingDeceleration;
+	}
+}
+
+void ALudens_PCharacter::MeleeAttack(const FInputActionValue& Value)
+{
+	if (PlayerAttackComponent)
+	{
+		PlayerAttackComponent->TryMeleeAttack();
 	}
 }
 

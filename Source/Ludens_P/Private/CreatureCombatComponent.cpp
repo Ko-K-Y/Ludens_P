@@ -22,9 +22,12 @@ void UCreatureCombatComponent::TakeDamage(float Amount)
 	if (bIsDead) return;
 
 	CurrentHP -= Amount;
+	UE_LOG(LogTemp, Display, TEXT("TakeDamage!"));
+	
 	if (CurrentHP <= 0.f)
 	{
 		Die();
+		UE_LOG(LogTemp, Display, TEXT("Die!"));
 	}
 }
 

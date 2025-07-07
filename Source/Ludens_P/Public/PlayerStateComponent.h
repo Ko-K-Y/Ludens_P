@@ -9,7 +9,7 @@
 #include "PlayerStateComponent.generated.h"
 
 // 플레이어의 상태를 체크하는 컴포넌트
-// 쉴드, 체력, 
+// 쉴드, 체력, 피격 상태, 생존 상태 확인
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UPlayerStateComponent : public UActorComponent

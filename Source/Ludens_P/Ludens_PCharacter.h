@@ -42,12 +42,19 @@ class ALudens_PCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
 
-	// Dash Input Action
+	// 대쉬 Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* DashAction;
 
+	// 근접 공격 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* MeleeAttackAction;
+	
 	UPROPERTY()
 	class UInputMappingContext* DefaultMappingContext;
+
+	UPROPERTY()
+	class UPlayerAttackComponent* PlayerAttackComponent;
 	
 public:
 	ALudens_PCharacter();
@@ -101,12 +108,11 @@ protected:
 	void Server_Jump();
 	// Jump 함수 선언
 	virtual void Jump() override;
-
+	
 	UFUNCTION(Server, Reliable)
 	void Server_Dash();
 	// Dash 함수 선언
 	void Dash(const FInputActionValue& Value);
-	
 	FTimerHandle DashTimerHandle; // 대시 타이머 핸들
     
 	// 마찰력 원본 값 저장용 변수
@@ -114,7 +120,7 @@ protected:
 	float OriginalBrakingDeceleration = 2048.0f;
 
 	UFUNCTION(Category="Movement")
-	void ResetMovementParams(); // 마찰력 복원 함수
+	void ResetMovementParams() const; // 마찰력 복원 함수
 	FVector2D LastMovementInput; // 마지막 이동 입력 저장
 
 	UFUNCTION()
@@ -136,8 +142,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Movement", Replicated)
 	bool bCanDash = true;
-
-
+	
+	// 근접 공격 함수 선언
+	void MeleeAttack(const FInputActionValue& Value);
 	
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
