@@ -2,6 +2,7 @@
 
 #include "Ludens_PCharacter.h"
 #include "Ludens_PProjectile.h"
+#include "Blueprint/UserWidget.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,6 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
+#include "PlayerAttackComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
 
@@ -52,6 +54,7 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	// 이동 컴포넌트 복제 설정
 	GetCharacterMovement()->SetIsReplicated(true);
+
 }
 
 void ALudens_PCharacter::BeginPlay()
@@ -70,15 +73,22 @@ void ALudens_PCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
 
 	if (!DashAction)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!"));
 	}
-	if (!DefaultMappingContext)
+	else if (!MeleeAttackAction)
 	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("DefaultMappingContext is null!"));
+		UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!"));
 	}
+	else if (!PlayerAttackComponent)
+	{
+		UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!"));
+
+	}
+	
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -96,8 +106,12 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Look);
 
-		//Dash
+		// Dash
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Dash);
+
+		// MeleeAttack
+		EnhancedInputComponent->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::MeleeAttack);
+
 	}
 }
 
@@ -265,12 +279,21 @@ void ALudens_PCharacter::RechargeDash()
 	}
 }
 
-void ALudens_PCharacter::ResetMovementParams()
+void ALudens_PCharacter::ResetMovementParams() const
 {
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
 		MoveComp->GroundFriction = OriginalGroundFriction;
 		MoveComp->BrakingDecelerationWalking = OriginalBrakingDeceleration;
+	}
+}
+
+void ALudens_PCharacter::MeleeAttack(const FInputActionValue& Value)
+{
+	if (PlayerAttackComponent)
+	{
+		UE_LOG(LogTemp, Display, TEXT("F Key Pressed!"));
+		PlayerAttackComponent->TryMeleeAttack();
 	}
 }
 
