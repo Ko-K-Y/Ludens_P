@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameFramework/Character.h"
 #include "Components/ActorComponent.h"
 #include "PlayerAttackComponent.generated.h"
 

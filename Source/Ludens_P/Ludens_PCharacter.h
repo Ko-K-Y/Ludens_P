@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Blueprint/UserWidget.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
@@ -55,6 +56,7 @@ class ALudens_PCharacter : public ACharacter
 
 	UPROPERTY()
 	class UPlayerAttackComponent* PlayerAttackComponent;
+
 	
 public:
 	ALudens_PCharacter();

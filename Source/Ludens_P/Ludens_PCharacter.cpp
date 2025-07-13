@@ -2,6 +2,7 @@
 
 #include "Ludens_PCharacter.h"
 #include "Ludens_PProjectile.h"
+#include "Blueprint/UserWidget.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -53,6 +54,7 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	// 이동 컴포넌트 복제 설정
 	GetCharacterMovement()->SetIsReplicated(true);
+
 }
 
 void ALudens_PCharacter::BeginPlay()
@@ -71,6 +73,7 @@ void ALudens_PCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
 
 	if (!DashAction)
 	{
@@ -80,10 +83,12 @@ void ALudens_PCharacter::BeginPlay()
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!"));
 	}
-	if (!DefaultMappingContext)
+	else if (!PlayerAttackComponent)
 	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("DefaultMappingContext is null!"));
+		UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!"));
+
 	}
+	
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -287,6 +292,7 @@ void ALudens_PCharacter::MeleeAttack(const FInputActionValue& Value)
 {
 	if (PlayerAttackComponent)
 	{
+		UE_LOG(LogTemp, Display, TEXT("F Key Pressed!"));
 		PlayerAttackComponent->TryMeleeAttack();
 	}
 }

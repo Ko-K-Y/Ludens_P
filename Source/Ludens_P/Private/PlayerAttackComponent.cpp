@@ -20,7 +20,11 @@ void UPlayerAttackComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	if (!MeleeAttackHandler)
+	{
+		MeleeAttackHandler = NewObject<UMeleeAttackHandler>(this);
+		MeleeAttackHandler->OwnerCharacter = Cast<ACharacter>(GetOwner());
+	}
 	
 }
 
@@ -37,6 +41,13 @@ void UPlayerAttackComponent::Server_TryAttack()
 
 void UPlayerAttackComponent::TryMeleeAttack()
 {
+	if (!MeleeAttackHandler)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MeleeAttackHandler is nullptr!"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Display, TEXT("TryMeleeAttack Called!"));
 	AttackDamage = 99999;
 	if (!GetOwner()->HasAuthority())
 	{
@@ -45,12 +56,14 @@ void UPlayerAttackComponent::TryMeleeAttack()
 		return;
 	}
 	// 서버라면 실제 공격 처리
-	MeleeAttackHandler->HandleMeleeAttack();
+	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
 }
 
 void UPlayerAttackComponent::Server_TryMeleeAttack()
 {
-	MeleeAttackHandler->HandleMeleeAttack();
+	UE_LOG(LogTemp, Display, TEXT("TryMeleeAttack Called!"));
+	AttackDamage = 99999;
+	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
 }
 
 // Called every frame

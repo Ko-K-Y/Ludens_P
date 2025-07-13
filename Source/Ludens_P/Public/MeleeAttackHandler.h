@@ -13,7 +13,21 @@ UCLASS()
 class LUDENS_P_API UMeleeAttackHandler : public UObject
 {
 	GENERATED_BODY()
-	
+
+
+	UPROPERTY()
+	class UCreatureCombatComponent* CreatureCombatComp;
+
 public:
-	void HandleMeleeAttack();
+	UPROPERTY()
+	ACharacter* OwnerCharacter;
+
+	void HandleMeleeAttack(float damage);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	float MeleeRange = 200.0f;
+
+	
+protected:
+	virtual void BeginPlay();
 };
