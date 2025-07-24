@@ -12,10 +12,13 @@ UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UPlayerAttackComponent : public UActorComponent
 {
 	GENERATED_BODY()
-	
+
+	UPROPERTY()
+	class UWeaponAttackHandler* WeaponAttackHandler; // 무기 공격 클래스를 선언
 	UPROPERTY()
 	class UMeleeAttackHandler* MeleeAttackHandler; // 근접 공격 클래스를 선언
-	
+	UPROPERTY()
+	class ALudens_PCharacter* Character; // 캐릭터 클래스 선언
 public:	
 	// Sets default values for this component's properties
 	UPlayerAttackComponent();
@@ -33,8 +36,9 @@ public:
 
 	// 무기 공격 함수 호출
 	UFUNCTION()
-	void Server_TryAttack();
-	void TryAttack();
+	void Server_TryWeaponAttack();
+	UFUNCTION()
+	void TryWeaponAttack();
 	
 	// 근접 공격 함수 호출
 	UFUNCTION()

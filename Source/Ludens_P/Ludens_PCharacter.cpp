@@ -12,6 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
 #include "PlayerAttackComponent.h"
+#include "PlayerStateComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
 
@@ -55,6 +56,8 @@ ALudens_PCharacter::ALudens_PCharacter()
 	// 이동 컴포넌트 복제 설정
 	GetCharacterMovement()->SetIsReplicated(true);
 
+	// 초기 탄알 수 설정
+	CurrentAmmo = MaxAmmo;
 }
 
 void ALudens_PCharacter::BeginPlay()
@@ -73,7 +76,10 @@ void ALudens_PCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+	//컴포넌트 할당
 	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
+	PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
 
 	if (!DashAction)
 	{
@@ -86,7 +92,10 @@ void ALudens_PCharacter::BeginPlay()
 	else if (!PlayerAttackComponent)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!"));
-
+	}
+	else if (!PlayerStateComponent)
+	{
+		UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!"));
 	}
 	
 }
@@ -111,6 +120,15 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// MeleeAttack
 		EnhancedInputComponent->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::MeleeAttack);
+
+		// TestAttack -> P
+		EnhancedInputComponent->BindAction(TestAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::TestAttack);
+
+		// Reload
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Reload);
+
+		// Fire
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Fire);
 
 	}
 }
@@ -142,6 +160,15 @@ void ALudens_PCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
+{
+	if (PlayerStateComponent)
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("TestAttack!"));
+		PlayerStateComponent->TakeDamage(100.0f);
+	}
+}
+
 void ALudens_PCharacter::Jump()
 {
 	if (GetLocalRole() < ROLE_Authority)
@@ -154,9 +181,6 @@ void ALudens_PCharacter::Jump()
 	{
 		Super::Jump();
 		JumpCount++;
-
-		UE_LOG(LogTemplateCharacter, Warning, TEXT("JumpCount: %d"), JumpCount);
-
 		if (JumpCount <= MaxJumpCount)
 		{
 			LaunchCharacter(FVector(0,0,600), false, true);
@@ -183,8 +207,6 @@ void ALudens_PCharacter::Landed(const FHitResult& Hit)
 
 void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemplateCharacter, Warning, TEXT("Dash 시도: bCanDash=%s, CurrentDashCount=%d"), bCanDash ? TEXT("Yes") : TEXT("No"), CurrentDashCount);
-	
 	if (GetLocalRole() < ROLE_Authority)
 	{
 		Server_Dash();
@@ -270,8 +292,6 @@ void ALudens_PCharacter::RechargeDash()
 	if (GetLocalRole() == ROLE_Authority && CurrentDashCount < MaxDashCount)
 	{
 		CurrentDashCount++;
-		UE_LOG(LogTemp, Warning, TEXT("현재 대쉬 수: %d"), CurrentDashCount);
-		GEngine->AddOnScreenDebugMessage(0, 0.8f, FColor::Green, FString::Printf(TEXT("현재 대쉬 수: %d"), CurrentDashCount));
 	}
 	else
 	{
@@ -281,6 +301,7 @@ void ALudens_PCharacter::RechargeDash()
 
 void ALudens_PCharacter::ResetMovementParams() const
 {
+	// 대쉬 끝난 뒤 마찰력 초기화
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
 		MoveComp->GroundFriction = OriginalGroundFriction;
@@ -290,11 +311,69 @@ void ALudens_PCharacter::ResetMovementParams() const
 
 void ALudens_PCharacter::MeleeAttack(const FInputActionValue& Value)
 {
+	//근접 공격 로직 호출
 	if (PlayerAttackComponent)
 	{
-		UE_LOG(LogTemp, Display, TEXT("F Key Pressed!"));
 		PlayerAttackComponent->TryMeleeAttack();
 	}
+}
+
+void ALudens_PCharacter::Fire(const FInputActionValue& Value)
+{
+	// 무기 공격 로직 호출
+	if (PlayerAttackComponent)
+	{
+		CurrentAmmo--;
+		PlayerAttackComponent->TryWeaponAttack();
+	}
+}
+
+void ALudens_PCharacter::Server_Reload_Implementation()
+{
+	Reload(FInputActionValue());
+}
+
+void ALudens_PCharacter::Reload(const FInputActionValue& Value)
+{
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		Server_Reload();
+		return;
+	}
+
+	if (SavedAmmo <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Case1: Saved Ammo is 0"));
+		return;
+	}
+	else if (SavedAmmo - (MaxAmmo - CurrentAmmo) <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Case2: Left Ammo Reloaded"));
+		CurrentAmmo += SavedAmmo;
+		SavedAmmo = 0;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Case3: Reload Complete"));
+		SavedAmmo -= (MaxAmmo-CurrentAmmo);
+		CurrentAmmo = MaxAmmo;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Current Ammo %d"), CurrentAmmo);
+}
+
+void ALudens_PCharacter::OnRep_SavedAmmo()
+{
+	// 젤루 흡수 시 변경되는 UI, 사운드 등
+}
+
+void ALudens_PCharacter::OnRep_CurrentAmmo()
+{
+	// 재장전 시 변경되는 UI, 사운드 등
+}
+
+int16 ALudens_PCharacter::GetCurrentAmmo() const
+{
+	return CurrentAmmo;
 }
 
 void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -303,4 +382,8 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, JumpCount);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentDashCount);
 	DOREPLIFETIME(ALudens_PCharacter, bCanDash);
+	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
+	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
+	DOREPLIFETIME(ALudens_PCharacter, bCanReload);
+
 }

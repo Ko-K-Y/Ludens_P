@@ -4,29 +4,28 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "MeleeAttackHandler.generated.h"
+#include "WeaponAttackHandler.generated.h"
 
 /**
  * 
  */
 
 UCLASS()
-class LUDENS_P_API UMeleeAttackHandler : public UObject
+class LUDENS_P_API UWeaponAttackHandler : public UObject
 {
 	GENERATED_BODY()
 
 	UPROPERTY()
 	class UCreatureCombatComponent* CreatureCombatComp;
-
+	
 public:
 	UPROPERTY()
 	ACharacter* OwnerCharacter;
 
-	void HandleMeleeAttack(float damage);
+	void HandleWeaponAttack(float damage);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float MeleeRange = 200.0f;
-
+	float WeaponRange = 200.0f;
 	
 protected:
 	virtual void BeginPlay();

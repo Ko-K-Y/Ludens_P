@@ -22,19 +22,18 @@ void UCreatureCombatComponent::TakeDamage(float Amount)
 	if (bIsDead) return;
 
 	CurrentHP -= Amount;
-	UE_LOG(LogTemp, Display, TEXT("TakeDamage!"));
+	UE_LOG(LogTemp, Warning, TEXT("TakeDamage!"));
 	
 	if (CurrentHP <= 0.f)
 	{
 		Die();
-		UE_LOG(LogTemp, Display, TEXT("Die!"));
 	}
 }
 
 void UCreatureCombatComponent::Die()
 {
 	bIsDead = true;
-	UE_LOG(LogTemp, Warning, TEXT("Enemy Died"));
+	UE_LOG(LogTemp, Warning, TEXT("Died"));
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (OwnerChar)
 	{
