@@ -318,10 +318,23 @@ void ALudens_PCharacter::MeleeAttack(const FInputActionValue& Value)
 	}
 }
 
+void ALudens_PCharacter::Server_Fire_Implementation(const FInputActionValue& Value)
+{
+	Fire(Value); // 서버에서 발사 처리
+}
+
 void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 {
 	// 무기 공격 로직 호출
-	if (PlayerAttackComponent)
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		// 클라: 서버에 발사 요청 RPC 호출
+		Server_Fire(Value);
+		return;
+	}
+
+	// 서버: 실제 발사 처리
+	if (CurrentAmmo > 0)
 	{
 		CurrentAmmo--;
 		PlayerAttackComponent->TryWeaponAttack();
@@ -330,45 +343,62 @@ void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 
 void ALudens_PCharacter::Server_Reload_Implementation()
 {
-	Reload(FInputActionValue());
+	UE_LOG(LogTemp, Warning, TEXT("Server_Reload_Implementation called (Role: %d)"), GetLocalRole());
+	HandleReload();
 }
 
 void ALudens_PCharacter::Reload(const FInputActionValue& Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Reload() called (Role: %d)"), GetLocalRole());
+
 	if (GetLocalRole() < ROLE_Authority)
 	{
+		// 클라이언트 플레이어
 		Server_Reload();
 		return;
 	}
+	else HandleReload(); // 서버 플레이어
+}
 
-	if (SavedAmmo <= 0)
+void ALudens_PCharacter::HandleReload()
+{
+	UE_LOG(LogTemp, Warning, TEXT("HandleReload() called (Role: %d)"), GetLocalRole());
+	if (CurrentAmmo != MaxAmmo)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Case1: Saved Ammo is 0"));
-		return;
+		if (SavedAmmo <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Case1: Saved Ammo is 0"));
+			return;
+		}
+		else if (SavedAmmo - (MaxAmmo - CurrentAmmo) <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Case2: Left Ammo Reloaded"));
+			CurrentAmmo += SavedAmmo;
+			SavedAmmo = 0;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Case3: Reload Complete"));
+			SavedAmmo -= (MaxAmmo-CurrentAmmo);
+			CurrentAmmo = MaxAmmo;
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Current Ammo %d"), CurrentAmmo);
+		UE_LOG(LogTemp, Warning, TEXT("Saved Ammo %d"), SavedAmmo);
 	}
-	else if (SavedAmmo - (MaxAmmo - CurrentAmmo) <= 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Case2: Left Ammo Reloaded"));
-		CurrentAmmo += SavedAmmo;
-		SavedAmmo = 0;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Case3: Reload Complete"));
-		SavedAmmo -= (MaxAmmo-CurrentAmmo);
-		CurrentAmmo = MaxAmmo;
-	}
-	UE_LOG(LogTemp, Warning, TEXT("Current Ammo %d"), CurrentAmmo);
 }
 
 void ALudens_PCharacter::OnRep_SavedAmmo()
 {
-	// 젤루 흡수 시 변경되는 UI, 사운드 등
+	// 젤루 흡수 or 재장전 시 변경되는 UI, 사운드 등
+	UE_LOG(LogTemp, Warning, TEXT("OnRep_Saved Ammo %d"), SavedAmmo);
+
 }
 
 void ALudens_PCharacter::OnRep_CurrentAmmo()
 {
 	// 재장전 시 변경되는 UI, 사운드 등
+	UE_LOG(LogTemp, Warning, TEXT("OnRep_CurrentAmmo : %d"), CurrentAmmo);
+
 }
 
 int16 ALudens_PCharacter::GetCurrentAmmo() const
@@ -384,6 +414,4 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, bCanDash);
 	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
-	DOREPLIFETIME(ALudens_PCharacter, bCanReload);
-
 }

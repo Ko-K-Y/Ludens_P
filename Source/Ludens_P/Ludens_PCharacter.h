@@ -10,7 +10,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
-
 #include "Ludens_PCharacter.generated.h"
 
 class UInputComponent;
@@ -158,13 +157,15 @@ protected:
 	void MeleeAttack(const FInputActionValue& Value);
 	
 	// 무기 공격 함수 선언
+	UFUNCTION(Server, Reliable)
+	void Server_Fire(const FInputActionValue& Value);
 	void Fire(const FInputActionValue& Value);
 	
 	// 재장전 함수 선언
 	UFUNCTION(Server, Reliable)
 	void Server_Reload();
 	void Reload(const FInputActionValue& Value);
-
+	void HandleReload();
 	// 재장전 시스템 변수
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
 	int16 MaxSavedAmmo = 500;
@@ -174,13 +175,6 @@ protected:
 	int16 MaxAmmo = 10;
 	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
 	int16 CurrentAmmo = 10;
-	UPROPERTY(EditDefaultsOnly, Category = "Reload")
-	float ReloadCooldown = 0.5f;
-	
-	FTimerHandle ReloadCooldownTimerHandle; // 대쉬 쿨타임
-
-	UPROPERTY(EditDefaultsOnly, Category = "Reload", Replicated)
-	bool bCanReload = true;
 	
 	UFUNCTION()
 	void OnRep_SavedAmmo();
