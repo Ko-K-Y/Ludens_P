@@ -4,6 +4,8 @@
 #include "PlayerAttackComponent.h"
 
 #include "MeleeAttackHandler.h"
+#include "WeaponAttackHandler.h"
+#include "Ludens_P/Ludens_PCharacter.h"
 
 // Sets default values for this component's properties
 UPlayerAttackComponent::UPlayerAttackComponent()
@@ -25,18 +27,46 @@ void UPlayerAttackComponent::BeginPlay()
 		MeleeAttackHandler = NewObject<UMeleeAttackHandler>(this);
 		MeleeAttackHandler->OwnerCharacter = Cast<ACharacter>(GetOwner());
 	}
-	
+	if (!WeaponAttackHandler)
+	{
+		WeaponAttackHandler = NewObject<UWeaponAttackHandler>(this);
+		WeaponAttackHandler->OwnerCharacter = Cast<ACharacter>(GetOwner());
+	}
+	if (!Character)
+	{
+		Character = Cast<ALudens_PCharacter>(GetOwner());
+	}
 }
 
-void UPlayerAttackComponent::TryAttack()
+void UPlayerAttackComponent::TryWeaponAttack()
 {
+	if (!WeaponAttackHandler)
+	{
+		UE_LOG(LogTemp, Error, TEXT("WeaponAttackHandler is nullptr!"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("TryWeaponAttack Called!"))
+
+	if (Character->GetCurrentAmmo() <= 0) return; // 남은 탄알이 0이면 공격 처리를 하지 않고 리턴
+	
 	AttackDamage = 30;
 	// 무기 공격 함수 호출
+	if (!GetOwner()->HasAuthority())
+	{
+		// 클라이언트라면 서버 RPC 호출
+		Server_TryWeaponAttack();
+		return;
+	}
+	// 서버라면 실제 공격 처리
+	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
 }
 
-void UPlayerAttackComponent::Server_TryAttack()
+void UPlayerAttackComponent::Server_TryWeaponAttack()
 {
-	
+	UE_LOG(LogTemp, Warning, TEXT("TryWeaponAttack Called!"));
+	AttackDamage = 30;
+	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
 }
 
 void UPlayerAttackComponent::TryMeleeAttack()
@@ -47,7 +77,7 @@ void UPlayerAttackComponent::TryMeleeAttack()
 		return;
 	}
 
-	UE_LOG(LogTemp, Display, TEXT("TryMeleeAttack Called!"));
+	UE_LOG(LogTemp, Warning, TEXT("TryMeleeAttack Called!"));
 	AttackDamage = 99999;
 	if (!GetOwner()->HasAuthority())
 	{
@@ -61,7 +91,7 @@ void UPlayerAttackComponent::TryMeleeAttack()
 
 void UPlayerAttackComponent::Server_TryMeleeAttack()
 {
-	UE_LOG(LogTemp, Display, TEXT("TryMeleeAttack Called!"));
+	UE_LOG(LogTemp, Warning, TEXT("TryMeleeAttack Called!"));
 	AttackDamage = 99999;
 	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
 }
