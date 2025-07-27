@@ -3,8 +3,8 @@
 
 #include "TP_WeaponComponent.h"
 
-#include "EnemyBase.h"
-#include "EnemyPoolManager.h"
+//#include "EnemyBase.h"
+//#include "EnemyPoolManager.h"
 #include "Ludens_PCharacter.h"
 #include "Ludens_PProjectile.h"
 #include "GameFramework/PlayerController.h"
