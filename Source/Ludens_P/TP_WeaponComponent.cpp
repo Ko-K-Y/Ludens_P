@@ -14,6 +14,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Projects.h"
 #include "Animation/AnimInstance.h"
+#include "Camera/CameraComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 
@@ -22,7 +23,7 @@
 UTP_WeaponComponent::UTP_WeaponComponent()
 {
 	// Default offset from the character location for projectiles to spawn
-	MuzzleOffset = FVector(100.0f, 0.0f, 10.0f);
+	MuzzleOffset = FVector(50.0f, 100.0f, 0.0f);
 }
 void UTP_WeaponComponent::BeginPlay()
 {
@@ -49,18 +50,10 @@ void UTP_WeaponComponent::Fire()
 			return;
 		}
 	}
-	if (Character->HasAuthority())
-	{
-		// 서버 플레이어 (예: Listen Server)라면 바로 발사
-		HandleFire();
-	}
-	else
-	{
-		// 클라이언트 → 서버에게 발사 요청
-		ServerFire();
-	}
-	FRotator SpawnRotation = Character->GetActorRotation();
 
+	// 위치 및 방향
+	FVector CameraLocation = Character->FirstPersonCameraComponent->GetComponentLocation();
+	FRotator SpawnRotation = Character->GetActorRotation();
 	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
 	{
 		SpawnRotation = PC->PlayerCameraManager->GetCameraRotation();
@@ -68,14 +61,28 @@ void UTP_WeaponComponent::Fire()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("❗ GetController() is null, fallback to actor rotation"));
+
+	}
+	// 카메라 앞쪽에서 발사
+	constexpr float Distance = 10.0f;
+	FVector FireDirection = SpawnRotation.Vector();
+	FVector SpawnLocation = CameraLocation + FireDirection * Distance;
+
+	if (Character->HasAuthority())
+	{
+		HandleFire(SpawnLocation, SpawnRotation);
+	}
+	else
+	{
+		ServerFire(SpawnLocation, SpawnRotation);
 	}
 }
-void UTP_WeaponComponent::ServerFire_Implementation()
+void UTP_WeaponComponent::ServerFire_Implementation(FVector_NetQuantize SpawnLocation, FRotator SpawnRotation)
 {
 	// 클라이언트가 요청 → 서버에서 처리
-	HandleFire();
+	HandleFire(SpawnLocation, SpawnRotation);
 }
-void UTP_WeaponComponent::HandleFire() //서버에서 쓰는 Fire (얘가 진짜 Projectile을 쏘는거임)
+void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation) //서버에서 쓰는 Fire (얘가 진짜 Projectile을 쏘는거임)
 {
 	UE_LOG(LogTemp, Log, TEXT("FireFireFire"))
 	if (!ProjectileClass) //프로젝타일 null값 방지
@@ -90,25 +97,12 @@ void UTP_WeaponComponent::HandleFire() //서버에서 쓰는 Fire (얘가 진짜
 		return;
 	}
 
-	FRotator SpawnRotation = Character->GetActorRotation();
-
-	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
-	{
-		SpawnRotation = PC->PlayerCameraManager->GetCameraRotation();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("❗ GetController() is null, fallback to actor rotation"));
-	}
-
-	const FVector SpawnLocation = GetOwner()->GetActorLocation() + SpawnRotation.RotateVector(MuzzleOffset);
-
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = GetOwner();
 	SpawnParams.Instigator = Cast<APawn>(GetOwner());
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
-	ALudens_PProjectile* Projectile = GetWorld()->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
+	ALudens_PProjectile* Projectile = GetWorld()->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams); // (스폰 위치, 방향, 액터가 게임 월드가 스폰될 때 디테알한 부분을 조정 가능.)
 	if (!Projectile)
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ Projectile spawn failed"));

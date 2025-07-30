@@ -31,6 +31,12 @@ void UPlayerAttackComponent::BeginPlay()
 	{
 		WeaponAttackHandler = NewObject<UWeaponAttackHandler>(this);
 		WeaponAttackHandler->OwnerCharacter = Cast<ACharacter>(GetOwner());
+
+		ALudens_PCharacter* OwnerChar = Cast<ALudens_PCharacter>(GetOwner());
+		if (OwnerChar)
+		{
+			WeaponAttackHandler->WeaponComp = OwnerChar->FindComponentByClass<UTP_WeaponComponent>();
+		}
 	}
 	if (!Character)
 	{

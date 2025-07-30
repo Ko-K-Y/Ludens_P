@@ -5,13 +5,9 @@
 
 #include "CreatureCombatComponent.h"
 #include "GameFramework/Character.h"
+#include "../TP_WeaponComponent.h"
 #include "Ludens_P/Ludens_PCharacter.h"
 
-
-void UWeaponAttackHandler::BeginPlay()
-{
-	
-}
 
 void UWeaponAttackHandler::HandleWeaponAttack(float damage)
 {
@@ -23,8 +19,15 @@ void UWeaponAttackHandler::HandleWeaponAttack(float damage)
 		return;
 	}
 	// 무기 공격 로직 -> 공격 로직, 이펙트, 사운드 등등
+	if (!WeaponComp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("WeaponComp is nullptr in HandleWeaponAttack!"));
+		return;
+	}
+	WeaponComp->Fire();
+
 	
-	if (damage)
+	/*if (damage)
 	{
 		// 1. 플레이어 컨트롤러 얻기
 		APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
@@ -61,7 +64,9 @@ void UWeaponAttackHandler::HandleWeaponAttack(float damage)
 				CombatComp->TakeDamage(damage);
 			}
 		}
-	}
+	}*/
 }
+
+
 
 

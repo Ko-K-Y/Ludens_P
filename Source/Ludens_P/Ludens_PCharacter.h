@@ -29,11 +29,11 @@ class ALudens_PCharacter : public ACharacter
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Mesh, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* Mesh1P;
-
+public:
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
-
+private:
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
@@ -68,6 +68,9 @@ class ALudens_PCharacter : public ACharacter
 
 	UPROPERTY()
 	class UPlayerStateComponent* PlayerStateComponent;
+
+	UPROPERTY()
+	class UTP_WeaponComponent* WeaponComponent;
 	
 public:
 	ALudens_PCharacter();

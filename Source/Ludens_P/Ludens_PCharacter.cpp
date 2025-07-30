@@ -13,6 +13,8 @@
 #include "InputActionValue.h"
 #include "PlayerAttackComponent.h"
 #include "PlayerStateComponent.h"
+#include "TP_WeaponComponent.h"
+#include "WeaponAttackHandler.h"
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
 
@@ -80,7 +82,12 @@ void ALudens_PCharacter::BeginPlay()
 	//컴포넌트 할당
 	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
 	PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
-
+	WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
+	if (PlayerAttackComponent && WeaponComponent)
+	{
+		PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
+	}
+	
 	if (!DashAction)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!"));
@@ -129,7 +136,6 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Fire
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Fire);
-
 	}
 }
 
@@ -332,12 +338,11 @@ void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 		Server_Fire(Value);
 		return;
 	}
-
-	// 서버: 실제 발사 처리
 	if (CurrentAmmo > 0)
 	{
-		CurrentAmmo--;
-		PlayerAttackComponent->TryWeaponAttack();
+		// 서버: 실제 발사 처리
+		WeaponComponent->Fire();
+		CurrentAmmo --;
 	}
 }
 
