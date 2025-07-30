@@ -74,7 +74,7 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 void UPlayerStateComponent::Knocked()
 {
 	// Knocked 상태 변경은 서버에서만 실행
-	if (!GetOwner()->HasAuthority()) return;
+	if (!GetOwner()->HasAuthority()) Server_Knocked();
 	
 	UE_LOG(LogTemp, Error, TEXT("Player Knocked!"));
 	
@@ -88,6 +88,12 @@ void UPlayerStateComponent::Knocked()
 	
 	// 5초 뒤 Dead 함수를 호출하는 타이머를 설정
 	GetWorld()->GetTimerManager().SetTimer(KnockedTimer, this, &UPlayerStateComponent::Dead, 5.0f, false);
+}
+
+void UPlayerStateComponent::Server_Knocked_Implementation()
+{
+	UE_LOG(LogTemp, Error, TEXT("Client Player Knocked!"));
+	Knocked();
 }
 
 void UPlayerStateComponent::Dead()

@@ -53,6 +53,8 @@ public:
 	bool IsKnocked = false;
 	
 	void Knocked();
+	UFUNCTION(Server, Reliable)
+	void Server_Knocked();
 	void Dead();
 	void TakeDamage(float Amount);
 	void ResetInvincibility(); // 무적 시간 초기화 함수
