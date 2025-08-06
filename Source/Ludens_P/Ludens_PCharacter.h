@@ -54,23 +54,28 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* TestAttackAction;
 
+	// 재장전 Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* ReloadAction;
 
+	// 무기 공격 Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* FireAction;
+
+	// 팀원 소생 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* ReviveAction;
 	
 	UPROPERTY()
 	class UInputMappingContext* DefaultMappingContext;
-
 	UPROPERTY()
 	class UPlayerAttackComponent* PlayerAttackComponent;
-
 	UPROPERTY()
 	class UPlayerStateComponent* PlayerStateComponent;
-
 	UPROPERTY()
 	class UTP_WeaponComponent* WeaponComponent;
+	UPROPERTY()
+	class UReviveComponent* ReviveComponent;
 	
 public:
 	ALudens_PCharacter();
@@ -155,6 +160,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Dash", Replicated)
 	bool bCanDash = true;
+
+	// 근접 공격인지 부활인지 판단하는 함수 선언
+	void InteractOrMelee(const FInputActionValue& Value);
 	
 	// 근접 공격 함수 선언
 	void MeleeAttack(const FInputActionValue& Value);
@@ -185,7 +193,11 @@ protected:
 	void OnRep_CurrentAmmo();
 public:
 	int16 GetCurrentAmmo() const;
-	
+
+protected:
+	UFUNCTION(Server, Reliable)
+	void Server_Revive();
+	void Revive(const FInputActionValue& Value);
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };

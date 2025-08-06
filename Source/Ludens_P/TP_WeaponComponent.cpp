@@ -61,7 +61,6 @@ void UTP_WeaponComponent::Fire()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("❗ GetController() is null, fallback to actor rotation"));
-
 	}
 	// 카메라 앞쪽에서 발사
 	constexpr float Distance = 10.0f;

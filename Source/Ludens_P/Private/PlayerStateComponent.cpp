@@ -68,7 +68,6 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 		const float InvincibilityDuration = 2.0f;
 		GetWorld()->GetTimerManager().SetTimer(InvincibilityTimerHandle, this, &UPlayerStateComponent::ResetInvincibility, InvincibilityDuration, false);
 	}
-	
 }
 
 void UPlayerStateComponent::Knocked()
@@ -87,7 +86,7 @@ void UPlayerStateComponent::Knocked()
 	OnRep_Knocked();
 	
 	// 5초 뒤 Dead 함수를 호출하는 타이머를 설정
-	GetWorld()->GetTimerManager().SetTimer(KnockedTimer, this, &UPlayerStateComponent::Dead, 5.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(KnockedTimer, this, &UPlayerStateComponent::Dead, 15.0f, false);
 }
 
 void UPlayerStateComponent::Server_Knocked_Implementation()
@@ -102,6 +101,7 @@ void UPlayerStateComponent::Dead()
 	if (!GetOwner()->HasAuthority()) return;
 	
 	UE_LOG(LogTemp, Error, TEXT("Player Dead!"));
+	IsKnocked = false;
 	IsDead = true;
 	MoveSpeed = 0.0f;
 	

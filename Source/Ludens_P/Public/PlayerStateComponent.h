@@ -15,7 +15,7 @@ UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UPlayerStateComponent : public UActorComponent
 {
 	GENERATED_BODY()
-
+public:
 	UPROPERTY()
 	class ACharacter* Character;
 	
@@ -70,6 +70,6 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
+public:
 	FTimerHandle KnockedTimer; // 기절 한 뒤 죽을 때까지 작동하는 타이머
 };
