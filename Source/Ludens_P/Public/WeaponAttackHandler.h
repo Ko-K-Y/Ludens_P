@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
+#include "../TP_WeaponComponent.h"
+
 #include "WeaponAttackHandler.generated.h"
 
 /**
@@ -17,16 +19,18 @@ class LUDENS_P_API UWeaponAttackHandler : public UObject
 
 	UPROPERTY()
 	class UCreatureCombatComponent* CreatureCombatComp;
-	
+public:
+	UPROPERTY()
+	class UTP_WeaponComponent* WeaponComp;
 public:
 	UPROPERTY()
 	ACharacter* OwnerCharacter;
 
+	/*UPROPERTY()
+	ALudens_PCharacter* OwnerCharacter = nullptr;
+	void Initialize(ALudens_PCharacter* InOwner) { OwnerCharacter = InOwner; }*/
 	void HandleWeaponAttack(float damage);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float WeaponRange = 200.0f;
-	
-protected:
-	virtual void BeginPlay();
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	float WeaponRange = 200.0f;*/
 };

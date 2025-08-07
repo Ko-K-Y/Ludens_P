@@ -25,7 +25,7 @@ public:
 	void HandleMeleeAttack(float damage);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float MeleeRange = 200.0f;
+	float MeleeRange = 100.0f;
 
 	
 protected:

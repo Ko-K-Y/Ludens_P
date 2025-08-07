@@ -15,7 +15,7 @@ UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UPlayerStateComponent : public UActorComponent
 {
 	GENERATED_BODY()
-
+public:
 	UPROPERTY()
 	class ACharacter* Character;
 	
@@ -37,7 +37,10 @@ public:
 
 	// 플레이어 이동 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", ReplicatedUsing=OnRep_MoveSpeed)
-	float MoveSpeed = 600.0f;
+	float MoveSpeed;
+	float CalculateMoveSpeed; // 능력 강화시 계산용
+	float KnockedMoveSpeed = 100.0f;
+	float DeadMoveSpeed = 0.f;
 	
 	// 플레이어가 공격 당한 상태인지 확인, 공격 당하면 일정 시간 동안 무적 상태
 	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_IsAttacked)
@@ -53,6 +56,8 @@ public:
 	bool IsKnocked = false;
 	
 	void Knocked();
+	UFUNCTION(Server, Reliable)
+	void Server_Knocked();
 	void Dead();
 	void TakeDamage(float Amount);
 	void ResetInvincibility(); // 무적 시간 초기화 함수
@@ -64,10 +69,12 @@ public:
 	void OnRep_Knocked();
 	UFUNCTION()
 	void OnRep_MoveSpeed();
+
+	void UpdateMoveSpeed();
 	
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
+public:
 	FTimerHandle KnockedTimer; // 기절 한 뒤 죽을 때까지 작동하는 타이머
 };
