@@ -27,6 +27,7 @@ void UPlayerStateComponent::BeginPlay()
 		CurrentHP = MaxHP;
 		CurrentShield = MaxShield;
 		MoveSpeed = 600.0f; // 기본 이동 속도 설정
+		CalculateMoveSpeed = MoveSpeed;
 	}
 	Character = Cast<ACharacter>(GetOwner());
 	if (Character)
@@ -68,18 +69,17 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 		const float InvincibilityDuration = 2.0f;
 		GetWorld()->GetTimerManager().SetTimer(InvincibilityTimerHandle, this, &UPlayerStateComponent::ResetInvincibility, InvincibilityDuration, false);
 	}
-	
 }
 
 void UPlayerStateComponent::Knocked()
 {
 	// Knocked 상태 변경은 서버에서만 실행
-	if (!GetOwner()->HasAuthority()) return;
+	if (!GetOwner()->HasAuthority()) Server_Knocked();
 	
 	UE_LOG(LogTemp, Error, TEXT("Player Knocked!"));
 	
 	IsKnocked = true;
-	MoveSpeed = 100.0f;
+	MoveSpeed = KnockedMoveSpeed;
 	if (Character)
 		Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 
@@ -87,7 +87,13 @@ void UPlayerStateComponent::Knocked()
 	OnRep_Knocked();
 	
 	// 5초 뒤 Dead 함수를 호출하는 타이머를 설정
-	GetWorld()->GetTimerManager().SetTimer(KnockedTimer, this, &UPlayerStateComponent::Dead, 5.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(KnockedTimer, this, &UPlayerStateComponent::Dead, 15.0f, false);
+}
+
+void UPlayerStateComponent::Server_Knocked_Implementation()
+{
+	UE_LOG(LogTemp, Error, TEXT("Client Player Knocked!"));
+	Knocked();
 }
 
 void UPlayerStateComponent::Dead()
@@ -96,8 +102,9 @@ void UPlayerStateComponent::Dead()
 	if (!GetOwner()->HasAuthority()) return;
 	
 	UE_LOG(LogTemp, Error, TEXT("Player Dead!"));
+	IsKnocked = false;
 	IsDead = true;
-	MoveSpeed = 0.0f;
+	MoveSpeed = DeadMoveSpeed;
 	
 	if (Character)
 		Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
@@ -119,13 +126,13 @@ void UPlayerStateComponent::OnRep_IsAttacked()
 void UPlayerStateComponent::OnRep_Dead()
 {
 	// 클라이언트에서 죽은 상태 변경 시 처리할 로직 (UI, 이펙트 등)
-	UE_LOG(LogTemp, Log, TEXT("Client OnRep_Dead called."));
+	UE_LOG(LogTemp, Warning, TEXT("Client OnRep_Dead called."));
 }
 
 void UPlayerStateComponent::OnRep_Knocked()
 {
 	// 클라이언트에서 기절 상태 변경 시 처리할 로직 (UI, 이펙트 등)
-	UE_LOG(LogTemp, Log, TEXT("Client OnRep_Knocked called."));
+	UE_LOG(LogTemp, Warning, TEXT("Client OnRep_Knocked called."));
 }
 
 void UPlayerStateComponent::OnRep_MoveSpeed()
@@ -135,6 +142,18 @@ void UPlayerStateComponent::OnRep_MoveSpeed()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Client OnRep_MoveSpeed called. New Speed: %f"), MoveSpeed);
 		Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
+	}
+}
+
+void UPlayerStateComponent::UpdateMoveSpeed()
+{
+	// 반드시 서버에서 실행
+	if (GetOwner()->HasAuthority())
+	{
+		MoveSpeed = CalculateMoveSpeed;
+
+		// 만약 클라이언트가 호스트(리스닝 서버)인 경우, OnRep 함수가 자동으로 호출되지 않으므로 수동으로 호출해줍니다.
+		OnRep_MoveSpeed();
 	}
 }
 

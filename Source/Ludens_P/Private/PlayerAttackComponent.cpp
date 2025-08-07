@@ -31,6 +31,12 @@ void UPlayerAttackComponent::BeginPlay()
 	{
 		WeaponAttackHandler = NewObject<UWeaponAttackHandler>(this);
 		WeaponAttackHandler->OwnerCharacter = Cast<ACharacter>(GetOwner());
+
+		ALudens_PCharacter* OwnerChar = Cast<ALudens_PCharacter>(GetOwner());
+		if (OwnerChar)
+		{
+			WeaponAttackHandler->WeaponComp = OwnerChar->FindComponentByClass<UTP_WeaponComponent>();
+		}
 	}
 	if (!Character)
 	{
@@ -45,9 +51,7 @@ void UPlayerAttackComponent::TryWeaponAttack()
 		UE_LOG(LogTemp, Error, TEXT("WeaponAttackHandler is nullptr!"));
 		return;
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("TryWeaponAttack Called!"))
-
+	
 	if (Character->GetCurrentAmmo() <= 0) return; // 남은 탄알이 0이면 공격 처리를 하지 않고 리턴
 	
 	AttackDamage = 30;
@@ -64,7 +68,6 @@ void UPlayerAttackComponent::TryWeaponAttack()
 
 void UPlayerAttackComponent::Server_TryWeaponAttack()
 {
-	UE_LOG(LogTemp, Warning, TEXT("TryWeaponAttack Called!"));
 	AttackDamage = 30;
 	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
 }
@@ -77,7 +80,6 @@ void UPlayerAttackComponent::TryMeleeAttack()
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("TryMeleeAttack Called!"));
 	AttackDamage = 99999;
 	if (!GetOwner()->HasAuthority())
 	{
@@ -91,7 +93,6 @@ void UPlayerAttackComponent::TryMeleeAttack()
 
 void UPlayerAttackComponent::Server_TryMeleeAttack()
 {
-	UE_LOG(LogTemp, Warning, TEXT("TryMeleeAttack Called!"));
 	AttackDamage = 99999;
 	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
 }
