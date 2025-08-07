@@ -9,6 +9,8 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
+// 플레이어 부활 관련 컴포넌트
+
 // Sets default values for this component's properties
 UReviveComponent::UReviveComponent()
 {
@@ -82,8 +84,8 @@ void UReviveComponent::HandleReviveComplete()
 	// 소생 완료 후 타이머 클리어, 변수 초기화 등 추가 가능
 	TargetPlayerState->CurrentHP = (TargetPlayerState->MaxHP) / 2;
 	TargetPlayerState->IsKnocked = false;
-	TargetPlayerState->Character->GetCharacterMovement()->MaxWalkSpeed = 600.f;
-	UE_LOG(LogTemp, Warning, TEXT("Revive Complete!"));
+	TargetPlayerState->UpdateMoveSpeed();
+	UE_LOG(LogTemp, Error, TEXT("Revive Complete!"));
 	UE_LOG(LogTemp, Warning, TEXT("CurrentHP: %f"), TargetPlayerState->CurrentHP);
 	TargetPlayerState = nullptr;
 }

@@ -37,7 +37,10 @@ public:
 
 	// 플레이어 이동 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", ReplicatedUsing=OnRep_MoveSpeed)
-	float MoveSpeed = 600.0f;
+	float MoveSpeed;
+	float CalculateMoveSpeed; // 능력 강화시 계산용
+	float KnockedMoveSpeed = 100.0f;
+	float DeadMoveSpeed = 0.f;
 	
 	// 플레이어가 공격 당한 상태인지 확인, 공격 당하면 일정 시간 동안 무적 상태
 	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_IsAttacked)
@@ -66,6 +69,8 @@ public:
 	void OnRep_Knocked();
 	UFUNCTION()
 	void OnRep_MoveSpeed();
+
+	void UpdateMoveSpeed();
 	
 protected:
 	// Called when the game starts

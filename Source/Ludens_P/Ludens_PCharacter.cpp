@@ -177,7 +177,6 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 {
 	if (PlayerStateComponent)
 	{
-		UE_LOG(LogTemplateCharacter, Warning, TEXT("TestAttack!"));
 		PlayerStateComponent->TakeDamage(100.0f);
 	}
 }
@@ -448,23 +447,17 @@ void ALudens_PCharacter::HandleReload()
 			SavedAmmo -= (MaxAmmo-CurrentAmmo);
 			CurrentAmmo = MaxAmmo;
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Current Ammo %d"), CurrentAmmo);
-		UE_LOG(LogTemp, Warning, TEXT("Saved Ammo %d"), SavedAmmo);
 	}
 }
 
 void ALudens_PCharacter::OnRep_SavedAmmo()
 {
 	// 젤루 흡수 or 재장전 시 변경되는 UI, 사운드 등
-	UE_LOG(LogTemp, Warning, TEXT("OnRep_Saved Ammo %d"), SavedAmmo);
-
 }
 
 void ALudens_PCharacter::OnRep_CurrentAmmo()
 {
 	// 재장전 시 변경되는 UI, 사운드 등
-	UE_LOG(LogTemp, Warning, TEXT("OnRep_CurrentAmmo : %d"), CurrentAmmo);
-
 }
 
 int16 ALudens_PCharacter::GetCurrentAmmo() const // PlayerAttackComponent에서 현재 탄알 수 확인용
@@ -480,10 +473,8 @@ void ALudens_PCharacter::Server_Revive_Implementation()
 
 void ALudens_PCharacter::Revive(const FInputActionValue& Value)
 {
-	// 클라 -> 서버에게 소생 요청
+	// 만약 클라이면 -> 서버에게 소생 요청
 	if (GetLocalRole() < ROLE_Authority) Server_Revive();
-	
-	UE_LOG(LogTemp, Warning, TEXT("Revive(Role: %d)"), GetLocalRole());
 	ReviveComponent->HandleRevive();
 }
 
