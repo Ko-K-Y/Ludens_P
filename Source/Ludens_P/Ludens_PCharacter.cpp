@@ -2,6 +2,7 @@
 
 #include "Ludens_PCharacter.h"
 #include "Ludens_PProjectile.h"
+#include "Blueprint/UserWidget.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,6 +11,13 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
+#include "PlayerAttackComponent.h"
+#include "PlayerStateComponent.h"
+#include "TP_WeaponComponent.h"
+#include "WeaponAttackHandler.h"
+#include "CreatureCombatComponent.h"
+#include "ReviveComponent.h"
+
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
 
@@ -52,6 +60,9 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	// 이동 컴포넌트 복제 설정
 	GetCharacterMovement()->SetIsReplicated(true);
+
+	// 초기 탄알 수 설정
+	CurrentAmmo = MaxAmmo;
 }
 
 void ALudens_PCharacter::BeginPlay()
@@ -71,14 +82,28 @@ void ALudens_PCharacter::BeginPlay()
 		}
 	}
 
-	if (!DashAction)
+	//컴포넌트 할당
+	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
+	PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
+	WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
+	ReviveComponent =  FindComponentByClass<UReviveComponent>();
+	
+	if (PlayerAttackComponent && WeaponComponent)
 	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!"));
+		PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
 	}
-	if (!DefaultMappingContext)
-	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("DefaultMappingContext is null!"));
-	}
+	
+	if (!DashAction) UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!"))
+	
+	else if (!MeleeAttackAction) UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!"))
+	
+	else if (!PlayerAttackComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!"))
+	
+	else if (!PlayerStateComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!"))
+	
+	else if (!ReviveComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!"));
+	
+	
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -96,14 +121,34 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Look);
 
-		//Dash
+		// Dash
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Dash);
+
+		// MeleeAttack
+		EnhancedInputComponent->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::InteractOrMelee);
+
+		// TestAttack -> P
+		EnhancedInputComponent->BindAction(TestAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::TestAttack);
+
+		// Reload
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Reload);
+
+		// Fire
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Fire);
+
+		// Revive
+		EnhancedInputComponent->BindAction(ReviveAction, ETriggerEvent::Started, this, &ALudens_PCharacter::InteractOrMelee);
 	}
 }
 
 
 void ALudens_PCharacter::Move(const FInputActionValue& Value)
 {
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+	
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -128,6 +173,14 @@ void ALudens_PCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
+{
+	if (PlayerStateComponent)
+	{
+		PlayerStateComponent->TakeDamage(100.0f);
+	}
+}
+
 void ALudens_PCharacter::Jump()
 {
 	if (GetLocalRole() < ROLE_Authority)
@@ -135,14 +188,16 @@ void ALudens_PCharacter::Jump()
 		Server_Jump();
 		return;
 	}
-
+	
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+	
 	if (JumpCount < MaxJumpCount)
 	{
 		Super::Jump();
 		JumpCount++;
-
-		UE_LOG(LogTemplateCharacter, Warning, TEXT("JumpCount: %d"), JumpCount);
-
 		if (JumpCount <= MaxJumpCount)
 		{
 			LaunchCharacter(FVector(0,0,600), false, true);
@@ -169,12 +224,15 @@ void ALudens_PCharacter::Landed(const FHitResult& Hit)
 
 void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemplateCharacter, Warning, TEXT("Dash 시도: bCanDash=%s, CurrentDashCount=%d"), bCanDash ? TEXT("Yes") : TEXT("No"), CurrentDashCount);
-	
 	if (GetLocalRole() < ROLE_Authority)
 	{
 		Server_Dash();
 		return;
+	}
+	
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
 	}
 	
 	if (bCanDash && CurrentDashCount > 0)
@@ -256,8 +314,6 @@ void ALudens_PCharacter::RechargeDash()
 	if (GetLocalRole() == ROLE_Authority && CurrentDashCount < MaxDashCount)
 	{
 		CurrentDashCount++;
-		UE_LOG(LogTemp, Warning, TEXT("현재 대쉬 수: %d"), CurrentDashCount);
-		GEngine->AddOnScreenDebugMessage(0, 0.8f, FColor::Green, FString::Printf(TEXT("현재 대쉬 수: %d"), CurrentDashCount));
 	}
 	else
 	{
@@ -265,13 +321,161 @@ void ALudens_PCharacter::RechargeDash()
 	}
 }
 
-void ALudens_PCharacter::ResetMovementParams()
+void ALudens_PCharacter::ResetMovementParams() const
 {
+	// 대쉬 끝난 뒤 마찰력 초기화
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
 		MoveComp->GroundFriction = OriginalGroundFriction;
 		MoveComp->BrakingDecelerationWalking = OriginalBrakingDeceleration;
 	}
+}
+
+void ALudens_PCharacter::InteractOrMelee(const FInputActionValue& Value)
+{
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+	
+	// 화면 중심에서 월드 방향 구하기
+	FVector WorldLocation = FirstPersonCameraComponent->GetComponentLocation();
+	FRotator CameraRotation = GetActorRotation();
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
+	}
+	else UE_LOG(LogTemp, Warning, TEXT("❗ GetController() is null, fallback to actor rotation"));
+
+	FVector TraceDirection = CameraRotation.Vector();
+	// 트레이스 시작/끝 위치 계산
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = TraceStart + (TraceDirection * 100.f);
+
+	// 라인 트레이스
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f, 0, 2.0f);
+	
+	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
+	
+	if (bHit && Hit.GetActor())
+	{
+		// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
+		if (Hit.GetActor()->FindComponentByClass<UCreatureCombatComponent>())
+		{
+			MeleeAttack(Value);
+		}
+		if (Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
+		{
+			Revive(Value);
+		}
+	}
+}
+
+void ALudens_PCharacter::MeleeAttack(const FInputActionValue& Value)
+{
+	//근접 공격 로직 호출
+	if (PlayerAttackComponent)
+	{
+		PlayerAttackComponent->TryMeleeAttack();
+	}
+}
+
+void ALudens_PCharacter::Server_Fire_Implementation(const FInputActionValue& Value)
+{
+	Fire(Value); // 서버에서 발사 처리
+}
+
+void ALudens_PCharacter::Fire(const FInputActionValue& Value)
+{
+	// 무기 공격 로직 호출
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		// 클라: 서버에 발사 요청 RPC 호출
+		Server_Fire(Value);
+		return;
+	}
+	if (CurrentAmmo > 0)
+	{
+		// 서버: 실제 발사 처리
+		WeaponComponent->Fire();
+		CurrentAmmo --;
+	}
+}
+
+void ALudens_PCharacter::Server_Reload_Implementation()
+{
+	HandleReload();
+}
+
+void ALudens_PCharacter::Reload(const FInputActionValue& Value)
+{
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+	
+
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		// 클라이언트 플레이어
+		Server_Reload();
+		return;
+	}
+	else HandleReload(); // 서버 플레이어
+}
+
+void ALudens_PCharacter::HandleReload()
+{
+	if (CurrentAmmo != MaxAmmo)
+	{
+		if (SavedAmmo <= 0)
+		{
+			return;
+		}
+		else if (SavedAmmo - (MaxAmmo - CurrentAmmo) <= 0)
+		{
+			CurrentAmmo += SavedAmmo;
+			SavedAmmo = 0;
+		}
+		else
+		{
+			SavedAmmo -= (MaxAmmo-CurrentAmmo);
+			CurrentAmmo = MaxAmmo;
+		}
+	}
+}
+
+void ALudens_PCharacter::OnRep_SavedAmmo()
+{
+	// 젤루 흡수 or 재장전 시 변경되는 UI, 사운드 등
+}
+
+void ALudens_PCharacter::OnRep_CurrentAmmo()
+{
+	// 재장전 시 변경되는 UI, 사운드 등
+}
+
+int16 ALudens_PCharacter::GetCurrentAmmo() const // PlayerAttackComponent에서 현재 탄알 수 확인용
+{
+	return CurrentAmmo;
+}
+
+void ALudens_PCharacter::Server_Revive_Implementation()
+{
+	// 서버에서 소생 처리
+	ReviveComponent->HandleRevive();
+}
+
+void ALudens_PCharacter::Revive(const FInputActionValue& Value)
+{
+	// 만약 클라이면 -> 서버에게 소생 요청
+	if (GetLocalRole() < ROLE_Authority) Server_Revive();
+	ReviveComponent->HandleRevive();
 }
 
 void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -280,4 +484,6 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, JumpCount);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentDashCount);
 	DOREPLIFETIME(ALudens_PCharacter, bCanDash);
+	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
+	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
 }

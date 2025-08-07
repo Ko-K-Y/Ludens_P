@@ -5,11 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Blueprint/UserWidget.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
-
 #include "Ludens_PCharacter.generated.h"
 
 class UInputComponent;
@@ -29,11 +29,11 @@ class ALudens_PCharacter : public ACharacter
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Mesh, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* Mesh1P;
-
+public:
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
-
+private:
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
@@ -42,12 +42,40 @@ class ALudens_PCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
 
-	// Dash Input Action
+	// 대쉬 Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* DashAction;
 
+	// 근접 공격 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* MeleeAttackAction;
+
+	// 테스트 공격 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* TestAttackAction;
+
+	// 재장전 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* ReloadAction;
+
+	// 무기 공격 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* FireAction;
+
+	// 팀원 소생 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* ReviveAction;
+	
 	UPROPERTY()
 	class UInputMappingContext* DefaultMappingContext;
+	UPROPERTY()
+	class UPlayerAttackComponent* PlayerAttackComponent;
+	UPROPERTY()
+	class UPlayerStateComponent* PlayerStateComponent;
+	UPROPERTY()
+	class UTP_WeaponComponent* WeaponComponent;
+	UPROPERTY()
+	class UReviveComponent* ReviveComponent;
 	
 public:
 	ALudens_PCharacter();
@@ -69,6 +97,7 @@ protected:
 	void Look(const FInputActionValue& Value);
 
 protected:
+	void TestAttack(const FInputActionValue& Value);
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
@@ -81,13 +110,9 @@ public:
 
 private:
 	UPROPERTY(Replicated)
-	int32 JumpCount = 0; // 점프 횟수
+	int8 JumpCount = 0; // 점프 횟수
 	UPROPERTY(EditAnywhere, Category = "Jump")
-	int32 MaxJumpCount = 2; // 최대 점프 횟수 제한
-	
-	// 이동 속도
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
-	float MoveSpeed = 400.0f;
+	int8 MaxJumpCount = 2; // 최대 점프 횟수 제한
 
 	// 대쉬 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
@@ -101,44 +126,78 @@ protected:
 	void Server_Jump();
 	// Jump 함수 선언
 	virtual void Jump() override;
-
+	
 	UFUNCTION(Server, Reliable)
 	void Server_Dash();
 	// Dash 함수 선언
 	void Dash(const FInputActionValue& Value);
-	
 	FTimerHandle DashTimerHandle; // 대시 타이머 핸들
     
 	// 마찰력 원본 값 저장용 변수
 	float OriginalGroundFriction = 8.0f;
 	float OriginalBrakingDeceleration = 2048.0f;
 
-	UFUNCTION(Category="Movement")
-	void ResetMovementParams(); // 마찰력 복원 함수
+	UFUNCTION(Category="Dash")
+	void ResetMovementParams() const; // 마찰력 복원 함수
 	FVector2D LastMovementInput; // 마지막 이동 입력 저장
 
 	UFUNCTION()
 	void RechargeDash(); // 대쉬 충전 함수 선언
 	
 	// 대시 시스템 변수
-	UPROPERTY(EditDefaultsOnly, Category = "Movement")
-	int32 MaxDashCount = 3;
-	UPROPERTY(VisibleAnywhere, Category = "Movement", Replicated)
-	int32 CurrentDashCount = 3;
-	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	UPROPERTY(EditDefaultsOnly, Category = "Dash")
+	int8 MaxDashCount = 3;
+	UPROPERTY(VisibleAnywhere, Category = "Dash", Replicated)
+	int8 CurrentDashCount = 3;
+	UPROPERTY(EditDefaultsOnly, Category = "Dash")
 	float DashCooldown = 0.5f;
-	UPROPERTY(EditDefaultsOnly, Category = "Movement")
+	UPROPERTY(EditDefaultsOnly, Category = "Dash")
 	float DashRechargeTime = 3.0f;
 
 	FTimerHandle DashPhysicsTimerHandle; // 물리 설정 복원 전용
 	FTimerHandle DashCooldownTimerHandle; // 대쉬 쿨타임
 	FTimerHandle DashRechargeTimerHandle; // 대쉬 차지
 
-	UPROPERTY(EditDefaultsOnly, Category = "Movement", Replicated)
+	UPROPERTY(EditDefaultsOnly, Category = "Dash", Replicated)
 	bool bCanDash = true;
 
-
+	// 근접 공격인지 부활인지 판단하는 함수 선언
+	void InteractOrMelee(const FInputActionValue& Value);
 	
+	// 근접 공격 함수 선언
+	void MeleeAttack(const FInputActionValue& Value);
+	
+	// 무기 공격 함수 선언
+	UFUNCTION(Server, Reliable)
+	void Server_Fire(const FInputActionValue& Value);
+	void Fire(const FInputActionValue& Value);
+	
+	// 재장전 함수 선언
+	UFUNCTION(Server, Reliable)
+	void Server_Reload();
+	void Reload(const FInputActionValue& Value);
+	void HandleReload();
+	// 재장전 시스템 변수
+	UPROPERTY(EditDefaultsOnly, Category = "Reload")
+	int16 MaxSavedAmmo = 500;
+	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_SavedAmmo)
+	int16 SavedAmmo = 100;
+	UPROPERTY(EditDefaultsOnly, Category = "Reload")
+	int16 MaxAmmo = 10;
+	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
+	int16 CurrentAmmo = 10;
+	
+	UFUNCTION()
+	void OnRep_SavedAmmo();
+	UFUNCTION()
+	void OnRep_CurrentAmmo();
+public:
+	int16 GetCurrentAmmo() const;
+
+protected:
+	UFUNCTION(Server, Reliable)
+	void Server_Revive();
+	void Revive(const FInputActionValue& Value);
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };
