@@ -65,6 +65,10 @@ private:
 	// 팀원 소생 Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* ReviveAction;
+
+	// 젤루 흡수 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* AbsorbAction;
 	
 	UPROPERTY()
 	class UInputMappingContext* DefaultMappingContext;
@@ -198,6 +202,10 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_Revive();
 	void Revive(const FInputActionValue& Value);
+
+	void Absorb(const FInputActionValue& Value);
+	UFUNCTION(Server, Reliable)
+	void Server_Absorb(const FInputActionValue& Value);
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };

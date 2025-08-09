@@ -138,6 +138,9 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Revive
 		EnhancedInputComponent->BindAction(ReviveAction, ETriggerEvent::Started, this, &ALudens_PCharacter::InteractOrMelee);
+
+		// Absorb
+		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Absorb);
 	}
 }
 
@@ -476,6 +479,18 @@ void ALudens_PCharacter::Revive(const FInputActionValue& Value)
 	// 만약 클라이면 -> 서버에게 소생 요청
 	if (GetLocalRole() < ROLE_Authority) Server_Revive();
 	ReviveComponent->HandleRevive();
+}
+
+void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
+{
+	if (GetLocalRole() < ROLE_Authority) Server_Absorb(Value);
+
+	
+}
+
+void ALudens_PCharacter::Server_Absorb_Implementation(const FInputActionValue& Value)
+{
+	Absorb(Value);
 }
 
 void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
