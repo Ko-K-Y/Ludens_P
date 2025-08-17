@@ -2,7 +2,7 @@
 
 
 #include "PlayerAttackComponent.h"
-
+#include "Net/UnrealNetwork.h"
 #include "MeleeAttackHandler.h"
 #include "WeaponAttackHandler.h"
 #include "Ludens_P/Ludens_PCharacter.h"
@@ -44,6 +44,12 @@ void UPlayerAttackComponent::BeginPlay()
 	}
 }
 
+void UPlayerAttackComponent::Server_TryWeaponAttack_Implementation()
+{
+	AttackDamage = 30;
+	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
+}
+
 void UPlayerAttackComponent::TryWeaponAttack()
 {
 	if (!WeaponAttackHandler)
@@ -66,10 +72,10 @@ void UPlayerAttackComponent::TryWeaponAttack()
 	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
 }
 
-void UPlayerAttackComponent::Server_TryWeaponAttack()
+void UPlayerAttackComponent::Server_TryMeleeAttack_Implementation()
 {
-	AttackDamage = 30;
-	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
+	AttackDamage = 99999;
+	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
 }
 
 void UPlayerAttackComponent::TryMeleeAttack()
@@ -88,12 +94,6 @@ void UPlayerAttackComponent::TryMeleeAttack()
 		return;
 	}
 	// 서버라면 실제 공격 처리
-	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
-}
-
-void UPlayerAttackComponent::Server_TryMeleeAttack()
-{
-	AttackDamage = 99999;
 	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
 }
 

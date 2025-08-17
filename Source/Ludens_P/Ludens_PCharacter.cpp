@@ -353,7 +353,7 @@ void ALudens_PCharacter::InteractOrMelee(const FInputActionValue& Value)
 	FVector TraceDirection = CameraRotation.Vector();
 	// 트레이스 시작/끝 위치 계산
 	FVector TraceStart = WorldLocation;
-	FVector TraceEnd = TraceStart + (TraceDirection * 100.f);
+	FVector TraceEnd = TraceStart + (TraceDirection * 150.f);
 
 	// 라인 트레이스
 	FHitResult Hit;
@@ -372,10 +372,15 @@ void ALudens_PCharacter::InteractOrMelee(const FInputActionValue& Value)
 		{
 			MeleeAttack(Value);
 		}
-		if (Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
+		else if (Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
 		{
 			Revive(Value);
 		}
+	}
+	else if (!Hit.GetActor())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Hit.GetActor() is null!"));
+		return;
 	}
 }
 
@@ -484,7 +489,6 @@ void ALudens_PCharacter::Revive(const FInputActionValue& Value)
 void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 {
 	if (GetLocalRole() < ROLE_Authority) Server_Absorb(Value);
-
 	
 }
 
