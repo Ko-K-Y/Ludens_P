@@ -12,6 +12,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "JellooComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Projects.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
@@ -19,7 +21,7 @@
 #include "Engine/World.h"
 
 // Sets default values for this component's properties
-// 무기 종류와 Fire 메서드, 탄약, 재장전 등 무기와 관련된 메서드들
+// 무기 종류와 Fire 메서드, Jelloo 흡수 등 무기와 관련된 메서드들
 UTP_WeaponComponent::UTP_WeaponComponent()
 {
 	// Default offset from the character location for projectiles to spawn
@@ -41,16 +43,6 @@ void UTP_WeaponComponent::BeginPlay()
 
 void UTP_WeaponComponent::Fire()
 {
-	if (!Character)
-	{
-		Character = Cast<ALudens_PCharacter>(GetOwner());
-		if (!Character)
-		{
-			UE_LOG(LogTemp, Error, TEXT("❌ Character is null"));
-			return;
-		}
-	}
-
 	// 위치 및 방향
 	FVector CameraLocation = Character->FirstPersonCameraComponent->GetComponentLocation();
 	FRotator SpawnRotation = Character->GetActorRotation();
@@ -123,6 +115,90 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 		}
 	}
 }
+
+void UTP_WeaponComponent::ServerAbsorb_Implementation()
+{
+	HandleAbsorb();
+}
+
+void UTP_WeaponComponent::HandleAbsorb()
+{
+	// 반드시 서버에서만 로직 실행
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		ServerAbsorb();
+		return;
+	}
+
+	ALudens_PCharacter* Ludens_PCharacter = Cast<ALudens_PCharacter>(Character);
+	if (!Ludens_PCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OwnerCharacter is not ALudens_PCharacter!"));
+		return;
+	}
+		
+	// 화면 중심에서 월드 방향 구하기
+	FVector WorldLocation = Ludens_PCharacter->FirstPersonCameraComponent->GetComponentLocation();
+	FRotator CameraRotation = Character->GetActorRotation();
+	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
+	{
+		CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
+	}
+
+	// 트레이스 시작/끝 위치 계산
+	FVector TraceDirection = CameraRotation.Vector();
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = TraceStart + (TraceDirection * AbsorbRange);
+
+	// 라인 트레이스
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(Character);
+
+	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
+	bool bHit = Character->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
+
+	// 6. CreatureCombatComponent가 있으면 데미지 적용
+	if (bHit && Hit.GetActor())
+	{
+		// 맞은 액터가 JellooComp를 가지고 있는지 검사;
+		if (UJellooComponent* JellooComp = Hit.GetActor()->FindComponentByClass<UJellooComponent>())
+		{
+			TargetJelloo = JellooComp;
+			// 타이머가 이미 작동 중인지 먼저 확인
+			if (!GetWorld()->GetTimerManager().IsTimerActive(AbsorbDelayTimer))
+			{
+				GetWorld()->GetTimerManager().SetTimer(AbsorbDelayTimer, this, &UTP_WeaponComponent::PerformAbsorb, AbsorbDelay, false);
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("<UNK> Absorb failed"));
+		StopPerformAbsorb();
+		return;
+	}
+}
+
+void UTP_WeaponComponent::PerformAbsorb()
+{
+	if (!TargetJelloo)
+	{
+		// 타겟이 없으면 타이머를 중지하거나 무시
+		GetWorld()->GetTimerManager().ClearTimer(AbsorbDelayTimer);
+		return;
+	}
+	TargetJelloo->JellooTakeDamage(AbsorbAmount);
+	Character->SavedAmmo += AbsorbAmount;
+}
+
+void UTP_WeaponComponent::StopPerformAbsorb()
+{
+	UE_LOG(LogTemp, Error, TEXT("StopPerformAbsorb"));
+	TargetJelloo = nullptr;
+	GetWorld()->GetTimerManager().ClearTimer(AbsorbDelayTimer);
+}
+
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //필요 없을거같은데
 {
 	if (Character == nullptr)
@@ -137,4 +213,11 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //�
 			Subsystem->RemoveMappingContext(FireMappingContext);
 		}
 	}
+}
+
+void UTP_WeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UTP_WeaponComponent, AbsorbAmount);
+	
 }

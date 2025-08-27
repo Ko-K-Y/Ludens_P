@@ -16,6 +16,7 @@
 #include "TP_WeaponComponent.h"
 #include "WeaponAttackHandler.h"
 #include "CreatureCombatComponent.h"
+#include "JellooComponent.h"
 #include "ReviveComponent.h"
 
 #include "Engine/LocalPlayer.h"
@@ -125,7 +126,7 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Dash);
 
 		// MeleeAttack
-		EnhancedInputComponent->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::InteractOrMelee);
+		EnhancedInputComponent->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Interact);
 
 		// TestAttack -> P
 		EnhancedInputComponent->BindAction(TestAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::TestAttack);
@@ -137,10 +138,11 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Fire);
 
 		// Revive
-		EnhancedInputComponent->BindAction(ReviveAction, ETriggerEvent::Started, this, &ALudens_PCharacter::InteractOrMelee);
+		EnhancedInputComponent->BindAction(ReviveAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Interact);
 
 		// Absorb
-		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Absorb);
+		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Ongoing, this, &ALudens_PCharacter::Interact);
+		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Completed, this, &ALudens_PCharacter::AbsorbComplete);
 	}
 }
 
@@ -334,13 +336,13 @@ void ALudens_PCharacter::ResetMovementParams() const
 	}
 }
 
-void ALudens_PCharacter::InteractOrMelee(const FInputActionValue& Value)
+void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있는 대상이 무엇인지 판별해주는 메서드
 {
 	if (ReviveComponent && ReviveComponent->IsReviving())
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
 	}
-	
+	// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
 	// 화면 중심에서 월드 방향 구하기
 	FVector WorldLocation = FirstPersonCameraComponent->GetComponentLocation();
 	FRotator CameraRotation = GetActorRotation();
@@ -360,7 +362,8 @@ void ALudens_PCharacter::InteractOrMelee(const FInputActionValue& Value)
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f, 0, 2.0f);
+	// 라인트레이스 선 나타내기
+	// DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f, 0, 2.0f);
 	
 	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
@@ -375,6 +378,10 @@ void ALudens_PCharacter::InteractOrMelee(const FInputActionValue& Value)
 		else if (Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
 		{
 			Revive(Value);
+		}
+		else if (Hit.GetActor()->FindComponentByClass<UJellooComponent>())
+		{
+			Absorb(Value);
 		}
 	}
 	else if (!Hit.GetActor())
@@ -489,12 +496,30 @@ void ALudens_PCharacter::Revive(const FInputActionValue& Value)
 void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 {
 	if (GetLocalRole() < ROLE_Authority) Server_Absorb(Value);
-	
+	WeaponComponent->HandleAbsorb();
 }
 
 void ALudens_PCharacter::Server_Absorb_Implementation(const FInputActionValue& Value)
 {
 	Absorb(Value);
+}
+
+void ALudens_PCharacter::AbsorbComplete(const FInputActionValue& Value)
+{
+	
+	if (GetLocalRole() < ROLE_Authority) Server_AbsorbComplete(Value);
+	GetWorldTimerManager().SetTimer(
+	   AbsorbCompleteTimerHandle,
+	   FTimerDelegate::CreateUObject(WeaponComponent, &UTP_WeaponComponent::StopPerformAbsorb),
+	   0.3f, 
+	   false
+   );
+	UE_LOG(LogTemp, Log, TEXT("AbsorbComplete"));
+}
+
+void ALudens_PCharacter::Server_AbsorbComplete_Implementation(const FInputActionValue& Value)
+{
+	AbsorbComplete(Value);
 }
 
 void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const

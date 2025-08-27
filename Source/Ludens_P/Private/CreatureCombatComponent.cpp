@@ -76,28 +76,22 @@ void UCreatureCombatComponent::Die()
 	}
 
 	// 아이템 소환 로직, 블루프린트에서 뭘 소환할지 지정해주어야 함.
-	if (OwnerChar)
-		if (DropItemClass)
-		{
-			UE_LOG(LogTemp, Error, TEXT("드롭"));
-			FVector DropLocation = OwnerChar->GetActorLocation() + (0.f, 0.f, 30.f);
-			FRotator DropRotation = FRotator::ZeroRotator;
+	if (DropItemClass)
+	{
+		FVector DropLocation = OwnerChar->GetActorLocation() + FVector(0.f, 0.f, -30.f);
+		FRotator DropRotation = FRotator::ZeroRotator;
 
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-			AActor* DroppedItem = GetWorld()->SpawnActor<AActor>(DropItemClass, DropLocation, DropRotation, SpawnParams);
-
-			OwnerChar->Destroy(); // 나중에 사망 애니메이션이나 이펙트 등을 보여주고 싶으면 Multicast RPC로 복제해야함.
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Die(): DropItemClass is null! 아이템 드롭 불가"));
-			
-		}
+		AActor* DroppedItem = GetWorld()->SpawnActor<AActor>(DropItemClass, DropLocation, DropRotation, SpawnParams);
+	
+		OwnerChar->Destroy(); // 나중에 사망 애니메이션이나 이펙트 등을 보여주고 싶으면 Multicast RPC로 복제해야함.
+	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Die(): OwnerChar is null! 아이템 드롭 불가"));
+		UE_LOG(LogTemp, Error, TEXT("Die(): DropItemClass is null! 아이템 드롭 불가"));
+		return;
 	}
 }
 

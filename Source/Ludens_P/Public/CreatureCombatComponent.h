@@ -49,7 +49,7 @@ public:
 	float GetMaxHP() const { return MaxHP; }
 	
 protected:
-	UPROPERTY(EditAnywhere, Category="Combat")
+	UPROPERTY(EditAnywhere, Replicated, Category="Combat")
 	float MaxHP = 100.f;
 
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_CurrentHP, Category="Combat")
