@@ -36,13 +36,13 @@ public:
 	float MeleeAttackCoolTime; // 플레이어 근접 공격 쿨타임*/
 
 	// 무기 공격 함수 호출
-	UFUNCTION()
+	UFUNCTION(Server, Reliable)
 	void Server_TryWeaponAttack();
 	UFUNCTION()
 	void TryWeaponAttack();
 	
 	// 근접 공격 함수 호출
-	UFUNCTION()
+	UFUNCTION(Server, Reliable)
 	void Server_TryMeleeAttack();
 	void TryMeleeAttack();
 

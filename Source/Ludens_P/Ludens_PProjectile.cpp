@@ -29,8 +29,8 @@ ALudens_PProjectile::ALudens_PProjectile()
 	ProjectileMovement->InitialSpeed = 5000.f;
 	ProjectileMovement->MaxSpeed = 5000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
-	ProjectileMovement->bShouldBounce = true;
-
+	ProjectileMovement->bShouldBounce = false; // 나중에 뭐 능력 강화할 때 튕기는거 되도록 해서 한 번 튕길수 있도록 하는 걸로 업그레이드 하면 좋을듯
+	ProjectileMovement->ProjectileGravityScale = 0.0f; // 중력 영향 X
 	// Die after 3 seconds by default
 	InitialLifeSpan = 3.0f;
 }

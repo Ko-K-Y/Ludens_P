@@ -45,7 +45,12 @@ public:
 	/** Fire Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* FireAction;
-
+	
+protected:
+	UPROPERTY()
+	class UJellooComponent* TargetJelloo = nullptr; // 현재 흡수하고 있는 젤루
+	
+public:
 	/** Sets default values for this component's properties */
 	UTP_WeaponComponent();
 	void BeginPlay();
@@ -55,9 +60,23 @@ public:
 	void Fire();
 	UFUNCTION(Server, Reliable)
 	void ServerFire(FVector_NetQuantize SpawnLocation, FRotator SpawnRotation); // 클라이언트가 서버에 발사 요청할 RPC
-
 	void HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation); // 서버에서만 실행되는 진짜 발사 로직
+
+	UFUNCTION(Server, Reliable)
+	void ServerAbsorb(); // 클라이언트가 RPC 서버에 젤루 흡수 요청
+	void HandleAbsorb(); // 서버에서 실행되는 젤루 흡수 로직
+	void PerformAbsorb();
+	void StopPerformAbsorb();
 protected:
+	UPROPERTY()
+	float AbsorbRange = 200.f; // 젤루 흡수 사거리
+	UPROPERTY()
+	float AbsorbDelay = 0.3f; // 젤루 흡수 속도
+	UPROPERTY(Replicated)
+	int16 AbsorbAmount = 1; // 젤루 흡수 양 -> 나중에 이 수를 증가 시켜 젤루 흡수 속도 증가 같은 강화 요소로 쓸 수 있을 듯
+	FTimerHandle AbsorbDelayTimer;
+	bool bIsAbsorbing = false;
+	
 	/** Ends gameplay for this component. */
 	UFUNCTION()
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

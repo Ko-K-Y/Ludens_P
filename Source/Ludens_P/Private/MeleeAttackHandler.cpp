@@ -2,8 +2,9 @@
 
 
 #include "MeleeAttackHandler.h"
-
+#include "Camera/CameraComponent.h"
 #include "CreatureCombatComponent.h"
+#include "JellooComponent.h"
 #include "GameFramework/Character.h"
 #include "Ludens_P/Ludens_PCharacter.h"
 
@@ -26,25 +27,27 @@ void UMeleeAttackHandler::HandleMeleeAttack(float damage)
 	
 	if (damage) // 나중에 적이 흰색인 경우로 제한
 	{
-		// 1. 플레이어 컨트롤러 얻기
-		APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
-		if (!PC) return;
-
-		// 2. 화면 중앙 좌표 구하기
-		int32 ViewportX, ViewportY;
-		PC->GetViewportSize(ViewportX, ViewportY);
-		FVector2D ScreenCenter(ViewportX * 0.5f, ViewportY * 0.5f);
-
-		// 3. 화면 중심에서 월드 방향 구하기
-		FVector WorldLocation, WorldDirection;
-		if (!PC->DeprojectScreenPositionToWorld(ScreenCenter.X, ScreenCenter.Y, WorldLocation, WorldDirection))
+		ALudens_PCharacter* LudensCharacter = Cast<ALudens_PCharacter>(OwnerCharacter);
+		if (!LudensCharacter)
+		{
+			UE_LOG(LogTemp, Error, TEXT("OwnerCharacter is not ALudens_PCharacter!"));
 			return;
+		}
+		
+		// 화면 중심에서 월드 방향 구하기
+		FVector WorldLocation = LudensCharacter->FirstPersonCameraComponent->GetComponentLocation();
+		FRotator CameraRotation = OwnerCharacter->GetActorRotation();
+		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+		{
+			CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
+		}
 
-		// 4. 트레이스 시작/끝 위치 계산
+		// 트레이스 시작/끝 위치 계산
+		FVector TraceDirection = CameraRotation.Vector();
 		FVector TraceStart = WorldLocation;
-		FVector TraceEnd = TraceStart + (WorldDirection * MeleeRange);
+		FVector TraceEnd = TraceStart + (TraceDirection * MeleeRange);
 
-		// 5. 라인 트레이스
+		// 라인 트레이스
 		FHitResult Hit;
 		FCollisionQueryParams Params;
 		Params.AddIgnoredActor(OwnerCharacter);
