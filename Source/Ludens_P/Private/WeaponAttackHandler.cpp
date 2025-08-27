@@ -25,46 +25,6 @@ void UWeaponAttackHandler::HandleWeaponAttack(float damage)
 		return;
 	}
 	WeaponComp->Fire();
-
-	
-	/*if (damage)
-	{
-		// 1. 플레이어 컨트롤러 얻기
-		APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
-		if (!PC) return;
-
-		// 2. 화면 중앙 좌표 구하기
-		int32 ViewportX, ViewportY;
-		PC->GetViewportSize(ViewportX, ViewportY);
-		FVector2D ScreenCenter(ViewportX * 0.5f, ViewportY * 0.5f);
-
-		// 3. 화면 중심에서 월드 방향 구하기
-		FVector WorldLocation, WorldDirection;
-		if (!PC->DeprojectScreenPositionToWorld(ScreenCenter.X, ScreenCenter.Y, WorldLocation, WorldDirection))
-			return;
-
-		// 4. 트레이스 시작/끝 위치 계산
-		FVector TraceStart = WorldLocation;
-		FVector TraceEnd = TraceStart + (WorldDirection * WeaponRange);
-
-		// 5. 라인 트레이스
-		FHitResult Hit;
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(OwnerCharacter);
-
-		// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
-		bool bHit = OwnerCharacter->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
-
-		// 6. CreatureCombatComponent가 있으면 데미지 적용
-		if (bHit && Hit.GetActor())
-		{
-			// 맞은 액터가 CCC를 가지고 있는지 검사
-			if (UCreatureCombatComponent* CombatComp = Hit.GetActor()->FindComponentByClass<UCreatureCombatComponent>())
-			{
-				CombatComp->TakeDamage(damage);
-			}
-		}
-	}*/
 }
 
 

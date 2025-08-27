@@ -27,6 +27,7 @@ public:
 	void HandleRevive();
 	void HandleReviveComplete();
 protected:
+	UPROPERTY()
 	UPlayerStateComponent* TargetPlayerState = nullptr;
 
 public:	

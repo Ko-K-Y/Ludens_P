@@ -25,12 +25,6 @@ public:
 public:
 	UPROPERTY()
 	ACharacter* OwnerCharacter;
-
-	/*UPROPERTY()
-	ALudens_PCharacter* OwnerCharacter = nullptr;
-	void Initialize(ALudens_PCharacter* InOwner) { OwnerCharacter = InOwner; }*/
+	
 	void HandleWeaponAttack(float damage);
-
-	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float WeaponRange = 200.0f;*/
 };

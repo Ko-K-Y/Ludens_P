@@ -65,6 +65,10 @@ private:
 	// 팀원 소생 Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* ReviveAction;
+
+	// 젤루 흡수 Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* AbsorbAction;
 	
 	UPROPERTY()
 	class UInputMappingContext* DefaultMappingContext;
@@ -162,7 +166,7 @@ protected:
 	bool bCanDash = true;
 
 	// 근접 공격인지 부활인지 판단하는 함수 선언
-	void InteractOrMelee(const FInputActionValue& Value);
+	void Interact(const FInputActionValue& Value);
 	
 	// 근접 공격 함수 선언
 	void MeleeAttack(const FInputActionValue& Value);
@@ -180,8 +184,10 @@ protected:
 	// 재장전 시스템 변수
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
 	int16 MaxSavedAmmo = 500;
+public:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_SavedAmmo)
 	int16 SavedAmmo = 100;
+protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
 	int16 MaxAmmo = 10;
 	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
@@ -198,6 +204,14 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_Revive();
 	void Revive(const FInputActionValue& Value);
+
+	void Absorb(const FInputActionValue& Value);
+	UFUNCTION(Server, Reliable)
+	void Server_Absorb(const FInputActionValue& Value);
+	void AbsorbComplete(const FInputActionValue& Value);
+	UFUNCTION(Server, Reliable)
+	void Server_AbsorbComplete(const FInputActionValue& Value);
+	FTimerHandle AbsorbCompleteTimerHandle;
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };
