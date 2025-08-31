@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
+#include "DSP/Delay.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -43,22 +44,26 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 	if (IsDead || IsKnocked) return;
 	if (IsAttacked) return; // 공격 받은 후 무적 상태
 	if (CurrentHP <= 0.f) Knocked();
-	
+
+	bCanRegenShield = false;
+	GetWorld()->GetTimerManager().ClearTimer(RegenShieldTimer);
+	GetWorld()->GetTimerManager().ClearTimer(bCanRegenShieldTimer);
+
 	// 쉴드가 남아 있을 경우 쉴드가 먼저 데미지를 받음.
 	if (CurrentShield > 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Shield got Damaged!"));
 		CurrentShield = FMath::Max(0.f, CurrentShield - Amount);
 		UE_LOG(LogTemp, Warning, TEXT("Shield: %f"), CurrentShield);
 
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HP got Damaged!"));
 		CurrentHP = FMath::Max(0.f, CurrentHP - Amount);
 		UE_LOG(LogTemp, Warning, TEXT("HP: %f"), CurrentHP);
 	}
 
+	GetWorld()->GetTimerManager().SetTimer(bCanRegenShieldTimer, this, &UPlayerStateComponent::EnableShieldRegen, 5.0f, false);
+	
 	if (CurrentHP <= 0.f) Knocked();
 	else
 	{
@@ -66,9 +71,26 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 		IsAttacked = true;
 
 		// 2초 후 무적 상태 해제
-		const float InvincibilityDuration = 2.0f;
+		const float InvincibilityDuration = 1.0f;
 		GetWorld()->GetTimerManager().SetTimer(InvincibilityTimerHandle, this, &UPlayerStateComponent::ResetInvincibility, InvincibilityDuration, false);
 	}
+}
+
+void UPlayerStateComponent::EnableShieldRegen()
+{
+	bCanRegenShield = true;
+	GetWorld()->GetTimerManager().SetTimer(RegenShieldTimer, this, &UPlayerStateComponent::RegenShieldHandle, 0.5f, true);
+}
+
+void UPlayerStateComponent::RegenShieldHandle()
+{
+	if (!bCanRegenShield || CurrentShield >= MaxShield)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(RegenShieldTimer);
+		return;
+	}
+	CurrentShield += 1.f;
+	UE_LOG(LogTemp, Log, TEXT("Shield Regen: %f"), CurrentShield);
 }
 
 void UPlayerStateComponent::Knocked()

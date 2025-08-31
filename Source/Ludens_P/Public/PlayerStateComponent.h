@@ -54,12 +54,21 @@ public:
 	//플레이어의 생존 여부
 	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Knocked)
 	bool IsKnocked = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
+	bool bCanRegenShield = false;
 	
 	void Knocked();
 	UFUNCTION(Server, Reliable)
 	void Server_Knocked();
 	void Dead();
 	void TakeDamage(float Amount);
+	void EnableShieldRegen();
+	void RegenShieldHandle();
+protected:
+	FTimerHandle bCanRegenShieldTimer;
+	FTimerHandle RegenShieldTimer;
+public:
 	void ResetInvincibility(); // 무적 시간 초기화 함수
 	UFUNCTION()
 	void OnRep_IsAttacked(); // 피격 당한 상태(무적 시간)일 때 UI 또는 이펙트를 적용하는 함수
