@@ -84,7 +84,7 @@ void UPlayerStateComponent::EnableShieldRegen()
 
 void UPlayerStateComponent::RegenShieldHandle()
 {
-	if (!bCanRegenShield || CurrentShield >= MaxShield)
+	if (!bCanRegenShield || CurrentShield >= MaxShield || IsKnocked || IsDead)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(RegenShieldTimer);
 		return;

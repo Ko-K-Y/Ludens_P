@@ -48,11 +48,11 @@ public:
 	FTimerHandle InvincibilityTimerHandle;
 
 	//플레이어의 생존 여부
-	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Dead)
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Dead)
 	bool IsDead = false;
 
 	//플레이어의 생존 여부
-	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Knocked)
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Knocked)
 	bool IsKnocked = false;
 
 	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
