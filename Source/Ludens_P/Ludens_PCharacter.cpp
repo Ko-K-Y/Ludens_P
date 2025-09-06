@@ -115,7 +115,7 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
+		
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Move);
 
@@ -149,6 +149,7 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 void ALudens_PCharacter::Move(const FInputActionValue& Value)
 {
+	if (PlayerStateComponent->IsDead) return;
 	if (ReviveComponent && ReviveComponent->IsReviving())
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
@@ -167,6 +168,7 @@ void ALudens_PCharacter::Move(const FInputActionValue& Value)
 
 void ALudens_PCharacter::Look(const FInputActionValue& Value)
 {
+	if (PlayerStateComponent->IsDead) return;
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
@@ -188,6 +190,7 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 
 void ALudens_PCharacter::Jump()
 {
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
 	if (GetLocalRole() < ROLE_Authority)
 	{
 		Server_Jump();
@@ -234,7 +237,7 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 		Server_Dash();
 		return;
 	}
-	
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
 	if (ReviveComponent && ReviveComponent->IsReviving())
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
@@ -338,6 +341,7 @@ void ALudens_PCharacter::ResetMovementParams() const
 
 void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있는 대상이 무엇인지 판별해주는 메서드
 {
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
 	if (ReviveComponent && ReviveComponent->IsReviving())
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
@@ -414,6 +418,7 @@ void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 		Server_Fire(Value);
 		return;
 	}
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
 	if (CurrentAmmo > 0)
 	{
 		// 서버: 실제 발사 처리
@@ -429,6 +434,7 @@ void ALudens_PCharacter::Server_Reload_Implementation()
 
 void ALudens_PCharacter::Reload(const FInputActionValue& Value)
 {
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
 	if (ReviveComponent && ReviveComponent->IsReviving())
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
