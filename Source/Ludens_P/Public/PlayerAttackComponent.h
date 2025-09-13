@@ -20,6 +20,11 @@ private:
 	class UMeleeAttackHandler* MeleeAttackHandler; // 근접 공격 클래스를 선언
 	UPROPERTY()
 	class ALudens_PCharacter* Character; // 캐릭터 클래스 선언
+	UPROPERTY(EditAnywhere, Category = Montage)
+	UAnimMontage* MeleeAttackMontage;
+	UPROPERTY(EditAnywhere, Category = Montage)
+	UAnimMontage* WeaponAttackMontage;
+	
 public:	
 	// Sets default values for this component's properties
 	UPlayerAttackComponent();
@@ -30,21 +35,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
 	float AttackCoolTime; // 플레이어 공격 쿨타임
 	
-	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float MeleeAttackDamage; // 플레이어 근접 공격력
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float MeleeAttackCoolTime; // 플레이어 근접 공격 쿨타임*/
-
+	float MeleeAttackCoolTime = 1.f; // 플레이어 근접 공격 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	bool bIsMeleeAttacking = false; // 플레이어가 근접 공격을 하고 있는지 확인
+	FTimerHandle MeleeAttackTimer;
+	UFUNCTION()
+	void EndMeleeAttack();
+	
 	// 무기 공격 함수 호출
 	UFUNCTION(Server, Reliable)
 	void Server_TryWeaponAttack();
-	UFUNCTION()
+	UFUNCTION(blueprintCallable)
 	void TryWeaponAttack();
 	
 	// 근접 공격 함수 호출
 	UFUNCTION(Server, Reliable)
 	void Server_TryMeleeAttack();
 	void TryMeleeAttack();
+	UFUNCTION(blueprintCallable)
+	void MeleeAttack();
 
 	
 protected:
@@ -55,5 +65,6 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	UFUNCTION()
+	void PlayMontage(UAnimMontage* Montage) const;
 };

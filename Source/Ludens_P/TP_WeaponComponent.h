@@ -45,6 +45,9 @@ public:
 	/** Fire Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* FireAction;
+
+	UPROPERTY(EditAnywhere, Category = Montage)
+	UAnimMontage* AbsorbMontage;
 	
 protected:
 	UPROPERTY()
@@ -71,7 +74,7 @@ protected:
 	UPROPERTY()
 	float AbsorbRange = 200.f; // 젤루 흡수 사거리
 	UPROPERTY()
-	float AbsorbDelay = 0.3f; // 젤루 흡수 속도
+	float AbsorbDelay = 0.5f; // 젤루 흡수 속도
 	UPROPERTY(Replicated)
 	int16 AbsorbAmount = 1; // 젤루 흡수 양 -> 나중에 이 수를 증가 시켜 젤루 흡수 속도 증가 같은 강화 요소로 쓸 수 있을 듯
 	FTimerHandle AbsorbDelayTimer;
@@ -80,4 +83,7 @@ protected:
 	/** Ends gameplay for this component. */
 	UFUNCTION()
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+public:
+	UFUNCTION()
+	void PlayMontage(UAnimMontage* Montage) const;
 };

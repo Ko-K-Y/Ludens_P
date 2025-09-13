@@ -111,7 +111,7 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 		UAnimInstance* AnimInstance = Character->GetMesh1P()->GetAnimInstance();
 		if (AnimInstance)
 		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
+			AnimInstance->Montage_Play(FireAnimation);
 		}
 	}
 }
@@ -188,6 +188,7 @@ void UTP_WeaponComponent::PerformAbsorb()
 		GetWorld()->GetTimerManager().ClearTimer(AbsorbDelayTimer);
 		return;
 	}
+	PlayMontage(AbsorbMontage);
 	TargetJelloo->JellooTakeDamage(AbsorbAmount);
 	Character->SavedAmmo += AbsorbAmount;
 }
@@ -212,6 +213,26 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //í•
 		{
 			Subsystem->RemoveMappingContext(FireMappingContext);
 		}
+	}
+}
+
+void UTP_WeaponComponent::PlayMontage(UAnimMontage* Montage) const
+{
+	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	if (!OwnerChar)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OwnerChar is nullptr!"));
+		return;
+	};
+	UAnimInstance* AnimInstance = OwnerChar->GetMesh() ? OwnerChar->GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		UE_LOG(LogTemp, Error, TEXT("AnimInstance is nullptr!"));
+		return;
+	}
+	if (AnimInstance && Montage)
+	{
+		AnimInstance->Montage_Play(Montage);
 	}
 }
 
