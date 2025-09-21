@@ -37,7 +37,6 @@ public:
 	/** Gun muzzle's offset from the characters location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	FVector MuzzleOffset;
-
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputMappingContext* FireMappingContext;
@@ -45,9 +44,11 @@ public:
 	/** Fire Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* FireAction;
-
+	
 	UPROPERTY(EditAnywhere, Category = Montage)
 	UAnimMontage* AbsorbMontage;
+	UPROPERTY(EditAnywhere, Category = Montage)
+	UAnimMontage* WeaponAttackMontage;
 	
 protected:
 	UPROPERTY()
@@ -85,5 +86,5 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 public:
 	UFUNCTION()
-	void PlayMontage(UAnimMontage* Montage) const;
+	void PlayMontage(UAnimMontage* Montage, float PlaySpeed)const;
 };

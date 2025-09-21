@@ -25,7 +25,7 @@
 UTP_WeaponComponent::UTP_WeaponComponent()
 {
 	// Default offset from the character location for projectiles to spawn
-	MuzzleOffset = FVector(50.0f, 100.0f, 0.0f);
+	MuzzleOffset = FVector(0.0f, 0.0f, 0.0f);
 }
 void UTP_WeaponComponent::BeginPlay()
 {
@@ -58,20 +58,21 @@ void UTP_WeaponComponent::Fire()
 	constexpr float Distance = 10.0f;
 	FVector FireDirection = SpawnRotation.Vector();
 	FVector SpawnLocation = CameraLocation + FireDirection * Distance;
+	FVector FireLocation = SpawnLocation + FVector(0.0f, 0.0f, 0.0f);
 
 	if (Character->HasAuthority())
 	{
-		HandleFire(SpawnLocation, SpawnRotation);
+		HandleFire(FireLocation, SpawnRotation);
 	}
 	else
 	{
-		ServerFire(SpawnLocation, SpawnRotation);
+		ServerFire(FireLocation, SpawnRotation);
 	}
 }
-void UTP_WeaponComponent::ServerFire_Implementation(FVector_NetQuantize SpawnLocation, FRotator SpawnRotation)
+void UTP_WeaponComponent::ServerFire_Implementation(FVector_NetQuantize FireLocation, FRotator SpawnRotation)
 {
 	// 클라이언트가 요청 → 서버에서 처리
-	HandleFire(SpawnLocation, SpawnRotation);
+	HandleFire(FireLocation, SpawnRotation);
 }
 void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation) //서버에서 쓰는 Fire (얘가 진짜 Projectile을 쏘는거임)
 {
@@ -105,14 +106,9 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, Character->GetActorLocation());
 	}
-
-	if (FireAnimation)
+	if (WeaponAttackMontage)
 	{
-		UAnimInstance* AnimInstance = Character->GetMesh1P()->GetAnimInstance();
-		if (AnimInstance)
-		{
-			AnimInstance->Montage_Play(FireAnimation);
-		}
+		PlayMontage(WeaponAttackMontage, 1.5f);
 	}
 }
 
@@ -188,7 +184,7 @@ void UTP_WeaponComponent::PerformAbsorb()
 		GetWorld()->GetTimerManager().ClearTimer(AbsorbDelayTimer);
 		return;
 	}
-	PlayMontage(AbsorbMontage);
+	PlayMontage(AbsorbMontage, 1.f);
 	TargetJelloo->JellooTakeDamage(AbsorbAmount);
 	Character->SavedAmmo += AbsorbAmount;
 }
@@ -216,7 +212,7 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //�
 	}
 }
 
-void UTP_WeaponComponent::PlayMontage(UAnimMontage* Montage) const
+void UTP_WeaponComponent::PlayMontage(UAnimMontage* Montage, float PlaySpeed) const
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (!OwnerChar)
@@ -232,7 +228,7 @@ void UTP_WeaponComponent::PlayMontage(UAnimMontage* Montage) const
 	}
 	if (AnimInstance && Montage)
 	{
-		AnimInstance->Montage_Play(Montage);
+		AnimInstance->Montage_Play(Montage, PlaySpeed);
 	}
 }
 

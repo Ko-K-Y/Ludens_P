@@ -49,8 +49,6 @@ void UPlayerAttackComponent::Server_TryWeaponAttack_Implementation()
 	TryWeaponAttack();
 }
 
-
-
 void UPlayerAttackComponent::TryWeaponAttack()
 {
 	if (!WeaponAttackHandler)
@@ -69,9 +67,8 @@ void UPlayerAttackComponent::TryWeaponAttack()
 		Server_TryWeaponAttack();
 		return;
 	}
-	PlayMontage(WeaponAttackMontage); // AnimMontage 재생
-	// 서버라면 실제 공격 처리
 	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
+	UE_LOG(LogTemp, Error, TEXT("WeaponAttackHandler"));
 }
 
 void UPlayerAttackComponent::Server_TryMeleeAttack_Implementation()
@@ -96,7 +93,7 @@ void UPlayerAttackComponent::TryMeleeAttack()
 	}
 	if (bIsMeleeAttacking) return; // 근접 공격 중이면 시행 X
 	bIsMeleeAttacking = true;
-	PlayMontage(MeleeAttackMontage); // AnimMontage 재생
+	PlayMontage(MeleeAttackMontage, 3.f); // AnimMontage 재생
 	
 	GetWorld()->GetTimerManager().SetTimer(MeleeAttackTimer, this, &UPlayerAttackComponent::EndMeleeAttack, MeleeAttackCoolTime, false); // 근접 공격 쿨타임 적용
 	UE_LOG(LogTemp, Warning, TEXT("MeleeAttacking is true"));
@@ -121,7 +118,7 @@ void UPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	// ...
 }
 
-void UPlayerAttackComponent::PlayMontage(UAnimMontage* Montage) const
+void UPlayerAttackComponent::PlayMontage(UAnimMontage* Montage, float PlaySpeed) const
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (!OwnerChar)
@@ -137,7 +134,8 @@ void UPlayerAttackComponent::PlayMontage(UAnimMontage* Montage) const
 	}
 	if (AnimInstance && Montage)
 	{
-		AnimInstance->Montage_Play(Montage, 2.0f);
+		AnimInstance->Montage_Play(Montage, PlaySpeed);
+		UE_LOG(LogTemp, Warning, TEXT("AnimMontage"))
 	}
 }
 

@@ -22,8 +22,7 @@ private:
 	class ALudens_PCharacter* Character; // 캐릭터 클래스 선언
 	UPROPERTY(EditAnywhere, Category = Montage)
 	UAnimMontage* MeleeAttackMontage;
-	UPROPERTY(EditAnywhere, Category = Montage)
-	UAnimMontage* WeaponAttackMontage;
+	
 	
 public:	
 	// Sets default values for this component's properties
@@ -46,7 +45,6 @@ public:
 	// 무기 공격 함수 호출
 	UFUNCTION(Server, Reliable)
 	void Server_TryWeaponAttack();
-	UFUNCTION(blueprintCallable)
 	void TryWeaponAttack();
 	
 	// 근접 공격 함수 호출
@@ -66,5 +64,5 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION()
-	void PlayMontage(UAnimMontage* Montage) const;
+	void PlayMontage(UAnimMontage* Montage, float PlaySpeed) const;
 };
